@@ -1,21 +1,14 @@
 part of di;
 
 _DEFAULT_VALUE(_) => null;
+typedef dynamic Factory(List<dynamic> parameters);
 
-typedef dynamic FactoryFn(Injector injector);
-
-/**
- * If owned by a [Provider] P bound by the [defining] injector, then this
- * returns whether P is visible to the [requesting] injector.
- * See [Injector.get].
- */
-typedef bool Visibility(Injector requesting, Injector defining);
-
-/**
- * Produces an instance of some type, provided [factory] produces instances of
- * the dependencies that type.
- */
-typedef Object TypeFactory(factory(Type type, Type annotation));
+class Binding {
+  Key key;
+  List<Key> parameterKeys;
+  Factory factory;
+  Binding(this.key, this.parameterKeys, this.factory);
+}
 
 /**
  * Module contributes configuration information to an [Injector] by providing
@@ -26,40 +19,13 @@ typedef Object TypeFactory(factory(Type type, Type annotation));
  * no effect on that injector.
  */
 class Module {
-  final _providers = <int, Provider>{};
-  final _childModules = <Module>[];
-  Map<Type, TypeFactory> _typeFactories = {};
+  static final TypeReflector _DEFAULT_REFLECTOR = new GeneratedTypeFactories();
+  final TypeReflector reflector;
 
-  Map<Type, TypeFactory> get typeFactories {
-    if (_childModules.isEmpty) return _typeFactories;
+  Module(): reflector = _DEFAULT_REFLECTOR;
+  Module.withReflector(this.reflector);
 
-    var factories = new Map.from(_typeFactories);
-    _childModules.forEach((m) {
-      if (m.typeFactories != null) {
-        factories.addAll(m.typeFactories);
-      }
-    });
-    return factories;
-  }
-
-  set typeFactories(Map<Type, TypeFactory> factories) {
-    _typeFactories = factories;
-  }
-
-  Map<int, Provider> _providersCache;
-
-  /**
-   * Compiles and returns a map of type bindings by performing depth-first
-   * traversal of the child (installed) modules.
-   */
-  Map<int, Provider> get bindings {
-    if (_isDirty) {
-      _providersCache = <int, Provider>{};
-      _childModules.forEach((child) => _providersCache.addAll(child.bindings));
-      _providersCache.addAll(_providers);
-    }
-    return _providersCache;
-  }
+  Map<Key, Binding> bindings = new Map<Key, Binding>();
 
   /**
    * Registers a binding for a given [type].
@@ -74,37 +40,38 @@ class Module {
    *   be injected.
    * * [toValue]: The given value will be injected.
    * * [withAnnotation]: Type decorated with additional annotation.
-   * * [visibility]: Function which determines if the requesting injector can
-   *   see the type in the current injector.
    *
    * Up to one (0 or 1) of the following parameters can be specified at the
    * same time: [toImplementation], [toFactory], [toValue].
    */
   void bind(Type type, {dynamic toValue: _DEFAULT_VALUE,
       FactoryFn toFactory: _DEFAULT_VALUE, Type toImplementation,
-      Type withAnnotation, Visibility visibility}) {
+      Type withAnnotation}) {
     bindByKey(new Key(type, withAnnotation), toValue: toValue,
-        toFactory: toFactory, toImplementation: toImplementation,
-        visibility: visibility);
+        toFactory: toFactory, toImplementation: toImplementation);
   }
 
   /**
    * Same as [bind] except it takes [Key] instead of
-   * [Type] [withAnnotation] combination.
+   * [Type] [withAnnotation] combination. Faster.
    */
   void bindByKey(Key key, {dynamic toValue: _DEFAULT_VALUE,
-      FactoryFn toFactory: _DEFAULT_VALUE, Type toImplementation,
-      Visibility visibility}) {
+      FactoryFn toFactory: _DEFAULT_VALUE, Type toImplementation}) {
     _checkBindArgs(toValue, toFactory, toImplementation);
-    _dirty();
+
+    List<Key> parameterKeys;
+    Factory factory;
+
     if (!identical(toValue, _DEFAULT_VALUE)) {
-      _providers[key.id] = new ValueProvider(key.type, toValue, visibility);
+      factory = (_) => toValue;
     } else if (!identical(toFactory, _DEFAULT_VALUE)) {
-      _providers[key.id] = new FactoryProvider(key.type, toFactory, visibility);
+      throw UnsupportedError("Module.bind: toFactory is not supported");
     } else {
-      _providers[key.id] = new TypeProvider(
-          toImplementation == null ? key.type : toImplementation, visibility);
+      var key = toImplementation == null ? key : new Key(toImplementation);
+      parameterKeys = reflector.parameterKeysFor(key);
+      factory = reflector.factoryFor(key);
     }
+    bindings[key] = new Binding(key, parameterKeys, factory);
   }
 
   _checkBindArgs(toValue, toFactory, toImplementation) {
@@ -125,9 +92,8 @@ class Module {
    * The [value] is what actually will be injected.
    */
   @Deprecated("Use bind(type, toValue: value)")
-  void value(Type id, value, {Type withAnnotation, Visibility visibility}) {
-    bind(id, toValue: value, withAnnotation: withAnnotation,
-        visibility: visibility);
+  void value(Type id, value, {Type withAnnotation}) {
+    bind(id, toValue: value, withAnnotation: withAnnotation);
   }
 
   /**
@@ -145,8 +111,8 @@ class Module {
    *   see the type in the current injector.
    */
   @Deprecated("Use bind(type, implementedBy: impl)")
-  void type(Type type, {Type withAnnotation, Type implementedBy, Visibility visibility}) {
-    bind(type, withAnnotation: withAnnotation, visibility: visibility,
+  void type(Type type, {Type withAnnotation, Type implementedBy}) {
+    bind(type, withAnnotation: withAnnotation,
         toImplementation: implementedBy);
   }
 
@@ -157,30 +123,13 @@ class Module {
    * that will be injected.
    */
   @Deprecated("Use bind(type, toFactory: factory)")
-  void factory(Type id, FactoryFn factoryFn, {Type withAnnotation,
-      Visibility visibility}) {
+  void factory(Type id, FactoryFn factoryFn, {Type withAnnotation}) {
     bind(id, withAnnotation: withAnnotation, visibility: visibility,
         toFactory: factoryFn);
   }
 
   @Deprecated("Use bindByKey(type, toFactory: factory)")
-  void factoryByKey(Key key, FactoryFn factoryFn, {Visibility visibility}) {
-    bindByKey(key, visibility: visibility, toFactory: factoryFn);
+  void factoryByKey(Key key, FactoryFn factoryFn) {
+    bindByKey(key, toFactory: factoryFn);
   }
-
-  /**
-   * Installs another module into this module. Bindings defined on this module
-   * take precidence over the installed module.
-   */
-  void install(Module module) {
-    _childModules.add(module);
-    _dirty();
-  }
-
-  _dirty() {
-    _providersCache = null;
-  }
-
-  bool get _isDirty =>
-      _providersCache == null || _childModules.any((m) => m._isDirty);
 }

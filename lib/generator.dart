@@ -48,10 +48,12 @@ main(List<String> args) {
 
 Map<Chunk, String> generateCode(String entryPoint, List<String> classAnnotations,
     String pathToSdk, List<String> packageRoots, String outputFilename) {
+
   var c = new SourceCrawler(pathToSdk, packageRoots);
   List<String> imports = <String>[];
   Map<Chunk, List<ClassElement>> typeFactoryTypes = <Chunk, List<ClassElement>>{};
   Map<String, String> typeToImport = new Map<String, String>();
+
   c.crawl(entryPoint, (CompilationUnitElement compilationUnit, SourceFile source) {
       new CompilationUnitVisitor(c.context, source, classAnnotations, imports,
           typeToImport, typeFactoryTypes, outputFilename).visit(compilationUnit, source);
@@ -61,8 +63,12 @@ Map<Chunk, String> generateCode(String entryPoint, List<String> classAnnotations
 
 Map<Chunk, String> printLibraryCode(Map<String, String> typeToImport,
     List<String> imports, Map<Chunk, List<ClassElement>> typeFactoryTypes) {
+
   Map<Chunk, StringBuffer> factories = <Chunk, StringBuffer>{};
+  Map<Chunk, StringBuffer> keys = <Chunk, StringBuffer>{};
+  Map<Chunk, StringBuffer> paramLists = <Chunk, StringBuffer>{};
   Map<Chunk, String> result = <Chunk, String>{};
+
   typeFactoryTypes.forEach((Chunk chunk, List<ClassElement> classes) {
     List<String> requiredImports = <String>[];
     String resolveClassIdentifier(InterfaceType type) {
@@ -76,19 +82,34 @@ Map<Chunk, String> printLibraryCode(Map<String, String> typeToImport,
       String prefix = _calculateImportPrefix(import, imports);
       return '$prefix.${type.name}';
     }
+
     factories[chunk] = new StringBuffer();
+    keys[chunk] = new StringBuffer();
+    paramLists[chunk] = new StringBuffer();
+    Map<String, String> toBeAdded = new Map<String, String>();
+    Set<String> addedKeys = new Set();
     classes.forEach((ClassElement clazz) {
       StringBuffer factory = new StringBuffer();
+      StringBuffer paramList = new StringBuffer();
+      List<String> factoryKeys = new List<String>();
       bool skip = false;
-      factory.write('${resolveClassIdentifier(clazz.type)}: (f) => ');
-      factory.write('new ${resolveClassIdentifier(clazz.type)}(');
+      if (addedKeys.add(clazz.type.name)){
+        toBeAdded[clazz.type.name]=
+          'final Key _KEY_${clazz.type.name} = new Key(${resolveClassIdentifier(clazz.type)});\n';
+      }
+      factoryKeys.add('${clazz.type.name}');
+
       ConstructorElement constr =
           clazz.constructors.firstWhere((c) => c.name.isEmpty,
           orElse: () {
             throw 'Unable to find default constructor for '
                   '$clazz in ${clazz.source}';
           });
-      factory.write(constr.parameters.map((param) {
+      factory.write('(p) => new ${resolveClassIdentifier(clazz.type)}(');
+      factory.write(new List.generate(constr.parameters.length, (i) => 'p[$i]').join(', '));
+      factory.write('),\n');
+
+      paramList.write(constr.parameters.map((param) {
         if (param.type.element is! ClassElement) {
           throw 'Unable to resolve type for constructor parameter '
                 '"${param.name}" for type "$clazz" in ${clazz.source}';
@@ -101,21 +122,33 @@ Map<Chunk, String> printLibraryCode(Map<String, String> typeToImport,
         var annotations = [];
         if (param.metadata.isNotEmpty) {
           annotations = param.metadata.map(
-              (item) => resolveClassIdentifier(item.element.returnType));
+              (item) => item.element.returnType.name);
         }
-        StringBuffer output =
-            new StringBuffer('f(${resolveClassIdentifier(param.type)}');
-        if (annotations.isNotEmpty) {
-          output.write(', ${annotations.first}');
+        String key_name = annotations.isNotEmpty ?
+          '${param.type.name}_${annotations.first}' : param.type.name;
+        String output = '_KEY_${key_name}';
+        if (addedKeys.add(key_name)){
+          var annotationParam = "";
+          if (param.metadata.isNotEmpty) {
+            annotationParam = ", ${resolveClassIdentifier(param.metadata.first.element.returnType)}";
+          }
+          toBeAdded['$key_name']='final Key _KEY_${key_name} = '+
+                   'new Key(${resolveClassIdentifier(param.type)}$annotationParam);\n';
         }
-        output.write(')');
         return output;
       }).join(', '));
-      factory.write('),\n');
+      paramList.write('],\n');
       if (!skip) {
+        factoryKeys.forEach((key) {
+          var keyString = toBeAdded.remove(key);
+          keys[chunk].write(keyString);
+        });
         factories[chunk].write(factory);
+        paramLists[chunk].write(paramList);
       }
     });
+    keys[chunk].writeAll(toBeAdded.values);
+    toBeAdded.clear();
     StringBuffer code = new StringBuffer();
     String libSuffix = chunk.library == null ? '' : '.${chunk.library.name}';
     code.write('library di.generated.type_factories$libSuffix;\n');
@@ -123,7 +156,10 @@ Map<Chunk, String> printLibraryCode(Map<String, String> typeToImport,
       String prefix = _calculateImportPrefix(import, imports);
       code.write ('import "$import" as $prefix;\n');
     });
-    code..write('var typeFactories = {\n${factories[chunk]}\n};\n')
+    code..write('import "package:di/key.dart" show Key;\n')
+        ..write(keys[chunk])
+        ..write('List<Function> typeFactories = [\n${factories[chunk]}];\n')
+        ..write('List<List<Key>> parameterKeys = [\n${paramLists[chunk]}];\n')
         ..write('main() {}\n');
     result[chunk] = code.toString();
   });

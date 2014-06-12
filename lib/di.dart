@@ -2,6 +2,7 @@ library di;
 
 import 'src/provider.dart';
 import 'key.dart';
+import 'dart:mirrors';
 
 export 'key.dart' show Key;
 

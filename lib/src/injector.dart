@@ -1,10 +1,15 @@
 part of di;
 
+Key _INJECTOR_KEY = new Key(Injector);
+
 class RootInjector implements Injector {
-  get parent => throw new NoParentError("No parent injector!");
-  get _bindings => throw new NoParentError("No provider found!");
+  Injector get parent => null;
+  List<Object> get _instances => null;
+  List<Binding> get _bindings => throw new NoParentError("No provider found!");
+  const RootInjector();
 }
 
+//TODO: Injector is the interface, not the implementation
 class Injector {
 
   static const rootInjector = const RootInjector();
@@ -16,15 +21,37 @@ class Injector {
   List<Binding> _bindings;
   List<Object> _instances;
 
-  Injector(List<Module> modules, [this.parent])
-      : _bindings = new List<Binding>(Key.numInstances),
-        _instances = new List<Object>(Key.numInstances) {
+  Injector(List<Module> modules, [Injector parent])
+      : parent = parent == null ? rootInjector : parent,
+        _bindings = new List<Binding>(Key.numInstances + 1), // + 1 for injector itself
+        _instances = new List<Object>(Key.numInstances + 1) {
 
     modules.forEach((module) {
       module.bindings.forEach((Key key, Binding binding)
           => _bindings[key.id] = binding);
     });
-    if (parent == null) parent = rootInjector;
+    _instances[_INJECTOR_KEY.id] = this;
+  }
+
+  Iterable<Type> _typesCache;
+
+  Iterable<Type> get _types {
+    if (_bindings == null) return [];
+
+    if (_typesCache == null) {
+      _typesCache = _bindings
+          .where((p) => p != null)
+          .map((p) => p.key.type);
+    }
+    return _typesCache;
+  }
+
+  Set<Type> get types {
+    var types = new Set<Type>();
+    for (var node = this; node.parent != null; node = node.parent) {
+      types.addAll(node._types);
+    }
+    return types;
   }
 
   /**
@@ -59,6 +86,7 @@ class Injector {
     var injector = this;
     Binding binding = key.id < _bindings.length ?
         _bindings[key.id] : null;
+
     while (binding == null) {
       try {
         injector = injector.parent;
@@ -74,7 +102,7 @@ class Injector {
     var params;
     try {
       params = binding.parameterKeys.map((Key paramKey) =>
-          getByKey(paramKey, depth: depth + 1));
+          getByKey(paramKey, depth: depth + 1)).toList();
     } on CircularDependencyError catch (e) {
       throw new CircularDependencyError(key, e);
     }
@@ -87,6 +115,7 @@ class Injector {
    *
    * [modules] overrides bindings of the parent.
    */
+  @deprecated
   Injector createChild(List<Module> modules) {
     return new Injector(modules, this);
   }

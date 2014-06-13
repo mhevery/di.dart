@@ -84,14 +84,14 @@ class DynamicTypeFactories extends TypeReflector {
       ParameterMirror p = ctor.parameters[pos];
       if (p.type.qualifiedName == #dynamic) {
         var name = MirrorSystem.getName(p.simpleName);
-        throw new NoProviderError("The '$name' parameter must be typed");
+        throw new ArgumentError("The '$name' parameter must be typed");
       }
       if (p.type is TypedefMirror) {
-        throw new NoProviderError(
+        throw new ArgumentError(
             "Typedef '${p.type}' in constructor '${classMirror.simpleName}' is not supported.");
       }
       if (p.metadata.length > 1) {
-        throw new NoProviderError(
+        throw new ArgumentError(
             "Constructor '${classMirror.simpleName}' parameter $pos of type '${p.type}' "
             "can have only zero on one annotation, but it has '${p.metadata}'.");
       }

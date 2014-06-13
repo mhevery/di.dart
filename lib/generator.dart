@@ -109,34 +109,39 @@ Map<Chunk, String> printLibraryCode(Map<String, String> typeToImport,
       factory.write(new List.generate(constr.parameters.length, (i) => 'p[$i]').join(', '));
       factory.write('),\n');
 
-      paramList.write(constr.parameters.map((param) {
-        if (param.type.element is! ClassElement) {
-          throw 'Unable to resolve type for constructor parameter '
-                '"${param.name}" for type "$clazz" in ${clazz.source}';
-        }
-        if (_isParameterized(param)) {
-          print('WARNING: parameterized types are not supported: '
-                '$param in $clazz in ${clazz.source}. Skipping!');
-          skip = true;
-        }
-        var annotations = [];
-        if (param.metadata.isNotEmpty) {
-          annotations = param.metadata.map(
-              (item) => item.element.returnType.name);
-        }
-        String key_name = annotations.isNotEmpty ?
-          '${param.type.name}_${annotations.first}' : param.type.name;
-        String output = '_KEY_${key_name}';
-        if (addedKeys.add(key_name)){
-          var annotationParam = "";
-          if (param.metadata.isNotEmpty) {
-            annotationParam = ", ${resolveClassIdentifier(param.metadata.first.element.returnType)}";
+      if (constr.parameters.isEmpty){
+        paramList.write('const [');
+      } else {
+        paramList.write('[');
+        paramList.write(constr.parameters.map((param) {
+          if (param.type.element is! ClassElement) {
+            throw 'Unable to resolve type for constructor parameter '
+                  '"${param.name}" for type "$clazz" in ${clazz.source}';
           }
-          toBeAdded['$key_name']='final Key _KEY_${key_name} = '+
-                   'new Key(${resolveClassIdentifier(param.type)}$annotationParam);\n';
-        }
-        return output;
-      }).join(', '));
+          if (_isParameterized(param)) {
+            print('WARNING: parameterized types are not supported: '
+                  '$param in $clazz in ${clazz.source}. Skipping!');
+            skip = true;
+          }
+          var annotations = [];
+          if (param.metadata.isNotEmpty) {
+            annotations = param.metadata.map(
+                (item) => item.element.returnType.name);
+          }
+          String key_name = annotations.isNotEmpty ?
+            '${param.type.name}_${annotations.first}' : param.type.name;
+          String output = '_KEY_${key_name}';
+          if (addedKeys.add(key_name)){
+            var annotationParam = "";
+            if (param.metadata.isNotEmpty) {
+              annotationParam = ", ${resolveClassIdentifier(param.metadata.first.element.returnType)}";
+            }
+            toBeAdded['$key_name']='final Key _KEY_${key_name} = '+
+                     'new Key(${resolveClassIdentifier(param.type)}$annotationParam);\n';
+          }
+          return output;
+        }).join(', '));
+      }
       paramList.write('],\n');
       if (!skip) {
         factoryKeys.forEach((key) {

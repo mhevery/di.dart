@@ -76,8 +76,7 @@ class Module {
       parameterKeys = inject.map((t) {
         if (t is Key) return t;
         if (t is Type) return new Key(t);
-        // TODO improve error message to contain type name and all inject values.
-        throw "Expecting Key or Type in inject, get $t";
+        throw "inject must be Keys or Types. '$t' is not an instance of Key or Type.";
       }).toList(growable: false);
     } else {
       var implementationKey = toImplementation == null ? key : new Key(toImplementation);

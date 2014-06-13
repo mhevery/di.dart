@@ -1,40 +1,61 @@
 part of di;
 
-class InvalidBindingError extends ArgumentError {
+abstract class BaseError extends Error {
+  final String message;
+  String toString() => message;
+  BaseError(this.message);
+}
+
+class InvalidBindingError extends BaseError {
   InvalidBindingError(message) : super(message);
 }
 
-class NoProviderError extends ArgumentError {
-  NoProviderError(message) : super(message);
+abstract class ResolvingError extends Error {
+
+  final Object node;
+  final ResolvingError parent;
+
+  ResolvingError(this.node, [this.parent]);
+
+  String get resolveChain {
+    StringBuffer buffer = new StringBuffer();
+    buffer.write("(resolving ");
+    Set seenNodes = new Set();
+
+    ResolvingError error = this;
+    while (true) {
+      buffer.write(error.node);
+      error = error.parent;
+      if (error == null || !seenNodes.add(error.node)) break;
+      buffer.write(" -> ");
+    }
+    buffer.write(")");
+    return buffer.toString();
+  }
+
+  String toString() => resolveChain;
 }
 
-class CircularDependencyError extends Error {
-  static const messagePrefix = "Cannot resolve a circular dependency! \n(";
-  static const messageSuffix = ")";
-  static const delimiter = " -> ";
-
-  final Key key;
-  final CircularDependencyError parent;
-  String message;
-  CircularDependencyError(this.key, [this.parent]) : super();
+class NoProviderError extends ResolvingError {
+  static final List<Key> _PRIMITIVE_TYPES = <Key>[
+      new Key(num), new Key(int), new Key(double), new Key(String),
+      new Key(bool)
+  ];
 
   String toString() {
-    if (message != null) return message;
-    StringBuffer buffer = new StringBuffer(messagePrefix);
-    Set<Key> seenKeys = new Set<Key>();
-
-    error = this;
-    while (true) {
-      buffer.write(error.key);
-      error = error.parent;
-      if (error == null || !seenKeys.add(error.key)) break;
-      buffer.write(delimiter);
+    if (_PRIMITIVE_TYPES.contains(node)) {
+      return 'Cannot inject a primitive type of $node! $resolveChain';
     }
-    buffer.write(messageSuffix);
-    return message = buffer.toString();
+    return "No provider found for $node! $resolveChain";
   }
+  NoProviderError(key, [parent]) : super(key, parent);
 }
 
-class NoParentError extends ArgumentError {
+class CircularDependencyError extends ResolvingError {
+  String toString() => "Cannot resolve a circular dependency! $resolveChain";
+  CircularDependencyError(key, [parent]) : super(key, parent);
+}
+
+class NoParentError extends BaseError {
   NoParentError(message) : super(message);
 }

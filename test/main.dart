@@ -175,7 +175,7 @@ class AnnotatedPrimitiveDependency {
 }
 
 class EmulatedMockEngineFactory {
-  call(Injector i) => new MockEngine();
+  call(p) => new MockEngine();
 }
 
 bool throwOnceShouldThrow = true;
@@ -192,9 +192,8 @@ class ThrowOnce {
 void main() {
   moduleTest();
 
-  new GeneratedTypeFactories(type_factories_gen.typeFactories, type_factories_gen.parameterKeys);
   createInjectorSpec('Injector',
-      (modules, [name]) => new Injector(modules));
+      (modules, [name]) => new ModuleInjector(modules));
 
 //  createInjectorSpec('StaticInjector',
 //      (modules, [name]) => new StaticInjector(modules: modules, name: name,
@@ -375,7 +374,7 @@ createInjectorSpec(String injectorName, InjectorFactory injectorFactory) {
 
 
     it('should allow providing factory functions', () {
-      var module = new Module()..bind(Engine, toFactory: (Injector injector) {
+      var module = new Module()..bind(Engine, toFactory: (p) {
         return 'factory-product';
       });
 
@@ -400,9 +399,9 @@ createInjectorSpec(String injectorName, InjectorFactory injectorFactory) {
     it('should inject injector into factory function', () {
       var module = new Module()
         ..bind(Engine)
-        ..bind(Car, toFactory: (Injector injector) {
-          return new Car(injector.get(Engine), injector);
-        });
+        ..bind(Car, toFactory: (p) {
+          return new Car(p[0], p[1]);
+        }, inject: [Engine, Injector]);
 
       var injector = injectorFactory([module]);
       var instance = injector.get(Car);
@@ -473,7 +472,7 @@ createInjectorSpec(String injectorName, InjectorFactory injectorFactory) {
 
     it('should throw an exception when circular dependency in factory', () {
       var injector = injectorFactory([new Module()
-          ..bind(CircularA, toFactory: (i) => i.get(CircularA))
+          ..bind(CircularA, inject: [CircularA])
       ]);
 
       expect(() {
@@ -519,9 +518,8 @@ createInjectorSpec(String injectorName, InjectorFactory injectorFactory) {
 
 
     it('should throw an exception when injecting typedef without providing it', () {
-      var injector = injectorFactory([new Module()..bind(WithTypeDefDependency)]);
-
       expect(() {
+        var injector = injectorFactory([new Module()..bind(WithTypeDefDependency)]);
         injector.get(WithTypeDefDependency);
       }).toThrowWith();
     });
@@ -643,7 +641,7 @@ createInjectorSpec(String injectorName, InjectorFactory injectorFactory) {
           new Module()
             ..bind(Log)
             ..bind(ClassOne)
-            ..bind(InterfaceOne, toFactory: (i) => i.get(ClassOne))
+            ..bind(InterfaceOne, inject: [ClassOne])
       ]);
 
       expect(injector.get(InterfaceOne)).toBe(injector.get(ClassOne));
@@ -651,7 +649,7 @@ createInjectorSpec(String injectorName, InjectorFactory injectorFactory) {
     });
 
 
-    describe('visiblity', () {
+    xdescribe('visiblity', () {
 
       it('should hide instances', () {
 

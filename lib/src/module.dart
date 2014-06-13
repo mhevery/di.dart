@@ -19,13 +19,15 @@ class Binding {
  * no effect on that injector.
  */
 class Module {
-  static final TypeReflector _DEFAULT_REFLECTOR = new GeneratedTypeFactories();
+  static final TypeReflector _DEFAULT_REFLECTOR = new DynamicTypeFactories();
   final TypeReflector reflector;
 
   Module(): reflector = _DEFAULT_REFLECTOR;
   Module.withReflector(this.reflector);
 
   Map<Key, Binding> bindings = new Map<Key, Binding>();
+
+  install(Module module) => module.bindings.forEach((key, binding) => bindings[key] = binding);
 
   /**
    * Registers a binding for a given [type].
@@ -45,10 +47,10 @@ class Module {
    * same time: [toImplementation], [toFactory], [toValue].
    */
   void bind(Type type, {dynamic toValue: _DEFAULT_VALUE,
-      FactoryFn toFactory: _DEFAULT_VALUE, Type toImplementation,
-      Type withAnnotation}) {
+      Factory toFactory: _DEFAULT_VALUE, Type toImplementation,
+      List inject: const [], Type withAnnotation}) {
     bindByKey(new Key(type, withAnnotation), toValue: toValue,
-        toFactory: toFactory, toImplementation: toImplementation);
+        toFactory: toFactory, toImplementation: toImplementation, inject: inject);
   }
 
   /**
@@ -56,7 +58,11 @@ class Module {
    * [Type] [withAnnotation] combination. Faster.
    */
   void bindByKey(Key key, {dynamic toValue: _DEFAULT_VALUE,
-      FactoryFn toFactory: _DEFAULT_VALUE, Type toImplementation}) {
+      Factory toFactory: _DEFAULT_VALUE, List inject: const [], Type toImplementation}) {
+    if (inject.length == 1 && toFactory == _DEFAULT_VALUE) {
+      toFactory = (p) => p[0];
+    }
+
     _checkBindArgs(toValue, toFactory, toImplementation);
 
     List<Key> parameterKeys;
@@ -64,12 +70,19 @@ class Module {
 
     if (!identical(toValue, _DEFAULT_VALUE)) {
       factory = (_) => toValue;
+      parameterKeys = const [];
     } else if (!identical(toFactory, _DEFAULT_VALUE)) {
-      throw UnsupportedError("Module.bind: toFactory is not supported");
+      factory = toFactory;
+      parameterKeys = inject.map((t) {
+        if (t is Key) return t;
+        if (t is Type) return new Key(t);
+        // TODO improve error message to contain type name and all inject values.
+        throw "Expecting Key or Type in inject, get $t";
+      }).toList(growable: false);
     } else {
-      var key = toImplementation == null ? key : new Key(toImplementation);
-      parameterKeys = reflector.parameterKeysFor(key);
-      factory = reflector.factoryFor(key);
+      var implementationKey = toImplementation == null ? key : new Key(toImplementation);
+      parameterKeys = reflector.parameterKeysFor(implementationKey);
+      factory = reflector.factoryFor(implementationKey);
     }
     bindings[key] = new Binding(key, parameterKeys, factory);
   }
@@ -123,13 +136,12 @@ class Module {
    * that will be injected.
    */
   @Deprecated("Use bind(type, toFactory: factory)")
-  void factory(Type id, FactoryFn factoryFn, {Type withAnnotation}) {
-    bind(id, withAnnotation: withAnnotation, visibility: visibility,
-        toFactory: factoryFn);
+  void factory(Type id, Factory factoryFn, {Type withAnnotation}) {
+    bind(id, withAnnotation: withAnnotation, toFactory: factoryFn);
   }
 
   @Deprecated("Use bindByKey(type, toFactory: factory)")
-  void factoryByKey(Key key, FactoryFn factoryFn) {
+  void factoryByKey(Key key, Factory factoryFn) {
     bindByKey(key, toFactory: factoryFn);
   }
 }

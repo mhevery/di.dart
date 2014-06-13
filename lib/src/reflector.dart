@@ -37,13 +37,13 @@ class GeneratedTypeFactories extends TypeReflector {
   }
 
   Factory factoryFor(Key key) {
-    assert (_factories[key] != null);
-    return _factories[key];
+    var keys = _factories[key];
+    if (keys != null) return keys;
+    throw new NoProviderError(key);
   }
 
   List<Key> parameterKeysFor(Key key) {
-    var keys;
-    keys = _parameterKeys[key];
+    var keys = _parameterKeys[key];
     if (keys != null) return keys;
     throw new NoProviderError(key);
   }
@@ -93,7 +93,7 @@ class DynamicTypeFactories extends TypeReflector {
       ParameterMirror p = ctor.parameters[pos];
       if (p.type.qualifiedName == #dynamic) {
         var name = MirrorSystem.getName(p.simpleName);
-        throw new ArgumentError("The '$name' parameter must be typed");
+        throw new ArgumentError("Error getting params for '$type': The '$name' parameter must be typed");
       }
       if (p.type is TypedefMirror) {
         throw new ArgumentError(

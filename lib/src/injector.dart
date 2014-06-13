@@ -110,8 +110,6 @@ class ModuleInjector extends Injector {
       throw new CircularDependencyError(key);
     var params;
     try {
-      //TODO: do we need a new list here for params or can we reuse?
-      // seems reusable unless this function gets called during binding.factory(params)
       params = binding.parameterKeys.map((Key paramKey) =>
           getByKey(paramKey, depth: depth + 1)).toList();
     } on CircularDependencyError catch (e) {

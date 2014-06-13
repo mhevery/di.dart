@@ -6,13 +6,13 @@ import 'package:di/di.dart';
 int count = 0;
 
 class InjectorBenchmark extends BenchmarkBase {
-  var injectorFactory;
   var module;
+  var typeReflector;
 
-  InjectorBenchmark(name, this.injectorFactory) : super(name);
+  InjectorBenchmark(name, this.typeReflector) : super(name);
 
   void run() {
-    Injector injector = injectorFactory([module]);
+    Injector injector = new ModuleInjector([module]);
     injector.get(A);
     injector.get(B);
 
@@ -22,16 +22,16 @@ class InjectorBenchmark extends BenchmarkBase {
   }
 
   setup() {
-    module = new Module()
+    module = new Module.withReflector(typeReflector)
       ..type(A)
       ..type(B)
       ..type(C)
-      ..type(C, withAnnotation: AnnOne, implementedBy: COne )
+      ..type(C) // TODO: , withAnnotation: AnnOne, implementedBy: COne )
       ..type(D)
       ..type(E)
-      ..type(E, withAnnotation: AnnTwo, implementedBy: ETwo )
-      ..type(F)
-      ..type(G);
+      ..type(E); // TODO: , withAnnotation: AnnTwo, implementedBy: ETwo )
+//      ..type(F)
+//      ..type(G);
   }
 
   teardown() {
@@ -96,7 +96,23 @@ class F {
 }
 
 class G {
-  G(@AnnTwo() E) {
+  G(@AnnTwo() E e) {
     count++;
   }
 }
+
+var typeFactories = {
+    new Key(A): (p) => new A(p[0], p[1]),
+    new Key(B): (p) => new B(p[0], p[1]),
+    new Key(C): (p) => new C(),
+    new Key(D): (p) => new D(),
+    new Key(E): (p) => new E(),
+};
+
+var paramKeys = {
+    new Key(A): [new Key(B), new Key(C)],
+    new Key(B): [new Key(D), new Key(E)],
+    new Key(C): const [],
+    new Key(D): const [],
+    new Key(E): const [],
+};

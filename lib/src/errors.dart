@@ -43,6 +43,7 @@ class NoProviderError extends ResolvingError {
   ];
   final NoProviderError parent;
 
+  // To throw different error if lack of provider is due to injecting primitive type
   Key rootPrimitiveType() {
     if (parent == null) {
       return _PRIMITIVE_TYPES.contains(node) ? node : null;

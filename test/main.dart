@@ -193,10 +193,7 @@ void main() {
   moduleTest();
 
   new GeneratedTypeFactories(type_factories_gen.typeFactories, type_factories_gen.parameterKeys);
-  createInjectorSpec('ModuleInjector Static',
-      (modules, [name]) => new ModuleInjector(modules));
-
-  createInjectorSpec('ModuleInjector Dynamic',
+  createInjectorSpec('ModuleInjector',
       (modules, [name]) => new ModuleInjector(modules));
 
 //  createInjectorSpec('StaticInjector',

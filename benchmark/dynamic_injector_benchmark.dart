@@ -6,5 +6,5 @@ import 'injector_benchmark_common.dart';
 
 main() {
   new InjectorBenchmark('DynamicInjectorBenchmark',
-      (m) => new DynamicInjector(modules: m)).report();
+      new DynamicTypeFactories()).report();
 }

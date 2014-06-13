@@ -19,7 +19,7 @@ class Binding {
  * no effect on that injector.
  */
 class Module {
-  static final TypeReflector _DEFAULT_REFLECTOR = new GeneratedTypeFactories();
+  static final TypeReflector _DEFAULT_REFLECTOR = new DynamicTypeFactories();
   final TypeReflector reflector;
 
   Module(): reflector = _DEFAULT_REFLECTOR;

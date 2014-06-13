@@ -105,14 +105,14 @@ Map<Chunk, String> printLibraryCode(Map<String, String> typeToImport,
             throw 'Unable to find default constructor for '
                   '$clazz in ${clazz.source}';
           });
-      factory.write('(p) => new ${resolveClassIdentifier(clazz.type)}(');
+      factory.write('_KEY_${clazz.type.name}: (p) => new ${resolveClassIdentifier(clazz.type)}(');
       factory.write(new List.generate(constr.parameters.length, (i) => 'p[$i]').join(', '));
       factory.write('),\n');
 
       if (constr.parameters.isEmpty){
-        paramList.write('const [');
+        paramList.write('_KEY_${clazz.type.name}: const [');
       } else {
-        paramList.write('[');
+        paramList.write('_KEY_${clazz.type.name}: [');
         paramList.write(constr.parameters.map((param) {
           if (param.type.element is! ClassElement) {
             throw 'Unable to resolve type for constructor parameter '
@@ -163,8 +163,8 @@ Map<Chunk, String> printLibraryCode(Map<String, String> typeToImport,
     });
     code..write('import "package:di/key.dart" show Key;\n')
         ..write(keys[chunk])
-        ..write('List<Function> typeFactories = [\n${factories[chunk]}];\n')
-        ..write('List<List<Key>> parameterKeys = [\n${paramLists[chunk]}];\n')
+        ..write('Map<Key, Function> typeFactories = {\n${factories[chunk]}};\n')
+        ..write('Map<Key, List<Key>> parameterKeys = {\n${paramLists[chunk]}};\n')
         ..write('main() {}\n');
     result[chunk] = code.toString();
   });

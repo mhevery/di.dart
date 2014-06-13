@@ -16,27 +16,36 @@ abstract class TypeReflector {
 class GeneratedTypeFactories extends TypeReflector {
   static GeneratedTypeFactories _instance;
 
-  final List<Factory> _factories;
-  final List<List<Key>> _parameterKeys;
-  GeneratedTypeFactories._(List<Factory> this._factories, List<List<Key>> this._parameterKeys);
+  Map<Key, Factory> _factories;
+  Map<Key, List<Key>> _parameterKeys;
 
-  factory GeneratedTypeFactories([f, p]){
+  GeneratedTypeFactories._(Map<Key, Factory> this._factories,
+                           Map<Key, List<Key>>this._parameterKeys);
+
+  factory GeneratedTypeFactories([f, p]) {
     if (_instance != null) {
       assert (f == null && p == null);
       return _instance;
+    }
+    if (f == null || p == null) {
+      throw "GeneratedTypeFactories not initialized. "
+          "Initialize by calling 'new GeneratedTypeFactories(factories, paramKeys)' "
+          "passing in generated code before any modules are initialized.";
     }
     assert (f != null && p != null);
     return _instance = new GeneratedTypeFactories._(f, p);
   }
 
   Factory factoryFor(Key key) {
-    assert (_factories[key.id] != null);
-    return _factories[key.id];
+    assert (_factories[key] != null);
+    return _factories[key];
   }
 
   List<Key> parameterKeysFor(Key key) {
-    assert (_parameterKeys[key.id] != null);
-    return _parameterKeys[key.id];
+    var keys;
+    keys = _parameterKeys[key];
+    if (keys != null) return keys;
+    throw new NoProviderError(key);
   }
 }
 

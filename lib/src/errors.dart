@@ -41,14 +41,23 @@ class NoProviderError extends ResolvingError {
       new Key(num), new Key(int), new Key(double), new Key(String),
       new Key(bool)
   ];
+  final NoProviderError parent;
 
-  String toString() {
-    if (_PRIMITIVE_TYPES.contains(node)) {
-      return 'Cannot inject a primitive type of $node! $resolveChain';
+  Key rootPrimitiveType() {
+    if (parent == null) {
+      return _PRIMITIVE_TYPES.contains(node) ? node : null;
+    }
+    return parent.rootPrimitiveType();
+  }
+
+  String toString(){
+    var primitive = rootPrimitiveType();
+    if (primitive != null) {
+      return 'Cannot inject a primitive type of $primitive! $resolveChain';
     }
     return "No provider found for $node! $resolveChain";
   }
-  NoProviderError(key, [parent]) : super(key, parent);
+  NoProviderError(key, [this.parent]): super(key);
 }
 
 class CircularDependencyError extends ResolvingError {

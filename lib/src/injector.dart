@@ -102,7 +102,7 @@ class ModuleInjector extends Injector {
     Binding binding = key.id < _bindings.length ?
         _bindings[key.id] : null;
 
-    if (binding == null) { //TODO: track history for error reporting
+    if (binding == null) {
       return _instances[key.id] = parent.getByKey(key);
     }
 
@@ -116,6 +116,8 @@ class ModuleInjector extends Injector {
           getByKey(paramKey, depth: depth + 1)).toList();
     } on CircularDependencyError catch (e) {
       throw new CircularDependencyError(key, e);
+    } on NoProviderError catch (e) {
+      throw new NoProviderError(key, e);
     }
 
     return _instances[key.id] = binding.factory(params);

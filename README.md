@@ -7,7 +7,7 @@
 Add dependency to your pubspec.yaml.
 
     dependencies:
-      di: ">=0.0.39 <0.1.0"
+      di: ">=0.0.39 <1.2.0"
 
 Then, run `pub install`.
 
@@ -67,7 +67,7 @@ void main() {
   var injector = defaultInjector(modules: [new Module()
       ..bind(GenericCar)
       ..bind(ElectricCar)
-      ..bind(Engine, toFactory: (i) => new V8Engine())
+      ..bind(Engine, toFactory: (p) => new V8Engine())
       ..bind(Engine, toImplementation: ElectricEngine, withAnnotation: Electric)
   ]);
   injector.get(GenericCar).drive();

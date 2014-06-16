@@ -318,7 +318,7 @@ createInjectorSpec(String injectorName, InjectorFactory injectorFactory) {
     });
 
 
-    xit('should error while resolving parameterized types', () {
+    it('should error while resolving parameterized types', () {
       var injector = injectorFactory([new Module()
             ..bind(ParameterizedType)
             ..bind(ParameterizedDependency)

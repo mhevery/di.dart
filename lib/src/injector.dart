@@ -13,17 +13,15 @@ abstract class Injector {
    * Returns the instance associated with the given key (i.e. [type] and
    * [annotation]) according to the following rules.
    *
-   * Let I be the nearest ancestor injector (possibly this one) that both
-   *
-   * - binds some [Provider] P to [key] and
-   * - P's visibility declares that I is visible to this injector.
+   * Let I be the nearest ancestor injector (possibly this one)
+   * that has either a cached instance or a binding for [key]
    *
    * If there is no such I, then throw
    *   [NoProviderError].
    *
-   * Once I and P are found, if I already created an instance for the key,
-   * it is returned.  Otherwise, P is used to create an instance, using I
-   * as an [ObjectFactory] to resolve the necessary dependencies.
+   * Once I is found, if I already created an instance for the key,
+   * it is returned.  Otherwise, the typeFactory of the binding is
+   * used to create an instance, using I as to resolve the dependencies.
    */
   dynamic get(Type type, [Type annotation])
       => getByKey(new Key(type, annotation));
@@ -43,6 +41,12 @@ abstract class Injector {
 }
 
 
+/**
+ * The RootInjector serves as an alternative to having a null parent for
+ * injectors that have no parent. This allows us to bypass checking for a null
+ * parent, and instead RootInjector will start the exception chain that reports
+ * the resolution context tree when no providers are found.
+ */
 class RootInjector implements Injector {
   Injector get parent => null;
   List<Object> get _instances => null;
@@ -54,6 +58,7 @@ class ModuleInjector extends Injector {
 
   static const rootInjector = const RootInjector();
   final Injector parent;
+  String name;
 
   List<Binding> _bindings;
   List<Object> _instances;
@@ -63,10 +68,12 @@ class ModuleInjector extends Injector {
         _bindings = new List<Binding>(Key.numInstances + 1), // + 1 for injector itself
         _instances = new List<Object>(Key.numInstances + 1) {
 
-    modules.forEach((module) {
-      module.bindings.forEach((Key key, Binding binding)
-          => _bindings[key.id] = binding);
-    });
+    if (modules != null) {
+      modules.forEach((module) {
+        module.bindings.forEach((Key key, Binding binding)
+            => _bindings[key.id] = binding);
+      });
+    }
     _instances[_INJECTOR_KEY.id] = this;
   }
 
@@ -93,36 +100,33 @@ class ModuleInjector extends Injector {
   }
 
   dynamic getByKey(Key key, {int depth: 0}){
-    var instance;
-    if (key.id < _instances.length) {
-      instance = _instances[key.id];
+    var id = key.id;
+    if (id < _instances.length) {
+      var instance = _instances[id];
+      if (instance != null) return instance;
+
+      Binding binding = _bindings[id];
+      if (binding != null) {
+        if (depth > 42) throw new CircularDependencyError(key);
+        try {
+          var params = binding.parameterKeys.map((Key paramKey) =>
+              getByKey(paramKey, depth: depth + 1)).toList();
+          return _instances[id] = binding.factory(params);
+        } on CircularDependencyError catch (e) {
+          throw new CircularDependencyError(key, e);
+        } on NoProviderError catch (e) {
+          throw new NoProviderError(key, e);
+        }
+      }
     }
-    if (instance != null) return instance;
-
-    Binding binding = key.id < _bindings.length ?
-        _bindings[key.id] : null;
-
-    if (binding == null) {
-      return _instances[key.id] = parent.getByKey(key);
-    }
-
-    if (depth > 50)
-      throw new CircularDependencyError(key);
-    var params;
-    try {
-      params = binding.parameterKeys.map((Key paramKey) =>
-          getByKey(paramKey, depth: depth + 1)).toList();
-    } on CircularDependencyError catch (e) {
-      throw new CircularDependencyError(key, e);
-    } on NoProviderError catch (e) {
-      throw new NoProviderError(key, e);
-    }
-
-    return _instances[key.id] = binding.factory(params);
+    // recursion instead of iteration because it:
+    // 1. tracks key history on the stack for error reporting
+    // 2. allows different types of ancestor injectors with alternative implementations.
+    return _instances[id] = parent.getByKey(key);
   }
 
   @deprecated
   Injector createChild(List<Module> modules) {
-    return new ModuleInjector(modules, this);
+    return new ModuleInjector(modules,this);
   }
 }

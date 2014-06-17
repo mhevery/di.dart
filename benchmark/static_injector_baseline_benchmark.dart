@@ -1,6 +1,4 @@
-import 'package:di/static_injector.dart';
-import 'package:di/src/base_injector.dart';
-import 'package:di/src/provider.dart';
+import 'package:di/di.dart';
 import 'package:benchmark_harness/benchmark_harness.dart';
 
 import 'injector_benchmark_common.dart';
@@ -94,7 +92,7 @@ class CreateInjectorAndChild extends InjectorBenchmark {
 @TestInjector()
 class BasicInjector {
 
-  Map<Type, TypeFactory> typeFactories;
+  Map<Type, Function> typeFactories;
   BasicInjector parent;
 
   Map<Type, Object> instances = new Map();

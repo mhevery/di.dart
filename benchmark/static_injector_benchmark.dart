@@ -1,4 +1,4 @@
-import 'package:di/static_injector.dart';
+import 'package:di/di.dart';
 
 import 'injector_benchmark_common.dart';
 

@@ -19,10 +19,10 @@ class Binding {
  * no effect on that injector.
  */
 class Module {
-  static final TypeReflector _DEFAULT_REFLECTOR = new DynamicTypeFactories();
+  static final TypeReflector DEFAULT_REFLECTOR = new DynamicTypeFactories();
   final TypeReflector reflector;
 
-  Module(): reflector = _DEFAULT_REFLECTOR;
+  Module(): reflector = DEFAULT_REFLECTOR;
   Module.withReflector(this.reflector);
 
   Map<Key, Binding> bindings = new Map<Key, Binding>();
@@ -126,17 +126,6 @@ class Module {
   void type(Type type, {Type withAnnotation, Type implementedBy}) {
     bind(type, withAnnotation: withAnnotation,
         toImplementation: implementedBy);
-  }
-
-  /**
-   * Register a binding to a factory function.
-   *
-   * The [factoryFn] will be called and the result of that function is the value
-   * that will be injected.
-   */
-  @Deprecated("Use bind(type, toFactory: factory)")
-  void factory(Type id, Factory factoryFn, {Type withAnnotation}) {
-    bind(id, withAnnotation: withAnnotation, toFactory: factoryFn);
   }
 
   @Deprecated("Use bindByKey(type, toFactory: factory)")

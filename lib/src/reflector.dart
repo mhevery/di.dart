@@ -7,6 +7,7 @@ part of di;
 //       between key and type.
 // TODO: add toClosure in addition to toFactory
 // TODO: write a verifier that toClosure signature matches inject attribute!
+// TODO: write tests
 
 abstract class TypeReflector {
   Factory factoryFor(Key key);
@@ -80,27 +81,27 @@ class DynamicTypeFactories extends TypeReflector {
   }
 
   Factory _generateFactory(Type type) {
-    TypeMirror classMirror = _reflectClass(type);
+    ClassMirror classMirror = _reflectClass(type);
     MethodMirror ctor = classMirror.declarations[classMirror.simpleName];
     return (List args) => classMirror.newInstance(ctor.constructorName, args).reflectee;
   }
 
   List<Key> _generateParameterKeys(Type type) {
-    TypeMirror classMirror = _reflectClass(type);
+    ClassMirror classMirror = _reflectClass(type);
     MethodMirror ctor = classMirror.declarations[classMirror.simpleName];
 
     return new List.generate(ctor.parameters.length, (int pos) {
       ParameterMirror p = ctor.parameters[pos];
       if (p.type.qualifiedName == #dynamic) {
         var name = MirrorSystem.getName(p.simpleName);
-        throw new ArgumentError("Error getting params for '$type': The '$name' parameter must be typed");
+        throw new DynamicReflectorError("Error getting params for '$type': The '$name' parameter must be typed");
       }
       if (p.type is TypedefMirror) {
-        throw new ArgumentError(
+        throw new DynamicReflectorError(
             "Typedef '${p.type}' in constructor '${classMirror.simpleName}' is not supported.");
       }
       if (p.metadata.length > 1) {
-        throw new ArgumentError(
+        throw new DynamicReflectorError(
             "Constructor '${classMirror.simpleName}' parameter $pos of type '${p.type}' "
             "can have only zero on one annotation, but it has '${p.metadata}'.");
       }
@@ -110,18 +111,18 @@ class DynamicTypeFactories extends TypeReflector {
     }, growable:false);
   }
 
-  TypeMirror _reflectClass(Type type) {
+  ClassMirror _reflectClass(Type type) {
     // TODO: cache this
-    TypeMirror classMirror = reflectType(type);
+    ClassMirror classMirror = reflectType(type);
     if (classMirror is TypedefMirror) {
-      throw new NoProviderError(
+      throw new DynamicReflectorError(
           'No implementation provided for ${getSymbolName(classMirror.qualifiedName)} typedef!');
     }
 
     MethodMirror ctor = classMirror.declarations[classMirror.simpleName];
 
     if (ctor == null) {
-      throw new NoProviderError('Unable to find default constructor for $type. '
+      throw new DynamicReflectorError('Unable to find default constructor for $type. '
       'Make sure class has a default constructor.' + (1.0 is int ?
       'Make sure you have correctly configured @MirrorsUsed.' : ''));
     }

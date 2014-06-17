@@ -6,8 +6,8 @@ abstract class BaseError extends Error {
   BaseError(this.message);
 }
 
-class InvalidBindingError extends BaseError {
-  InvalidBindingError(message) : super(message);
+class DynamicReflectorError extends BaseError {
+  DynamicReflectorError(message) : super(message);
 }
 
 abstract class ResolvingError extends Error {

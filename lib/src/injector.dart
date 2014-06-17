@@ -126,6 +126,7 @@ class ModuleInjector extends Injector {
     // recursion instead of iteration because it:
     // 1. tracks key history on the stack for error reporting
     // 2. allows different types of ancestor injectors with alternative implementations.
+    // An alternative could be to recurse only when parent is not a ModuleInjector
     return _instances[id] = parent.getByKey(key);
   }
 

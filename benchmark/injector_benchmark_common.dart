@@ -8,6 +8,11 @@ int count = 0;
 class InjectorBenchmark extends BenchmarkBase {
   var module;
   var typeReflector;
+  Key KEY_A;
+  Key KEY_B;
+  Key KEY_C;
+  Key KEY_D;
+  Key KEY_E;
 
   InjectorBenchmark(name, this.typeReflector) : super(name);
 
@@ -32,6 +37,7 @@ class InjectorBenchmark extends BenchmarkBase {
       ..type(E); // TODO: , withAnnotation: AnnTwo, implementedBy: ETwo )
 //      ..type(F)
 //      ..type(G);
+
   }
 
   teardown() {

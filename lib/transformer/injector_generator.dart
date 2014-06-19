@@ -62,7 +62,7 @@ class _Processor {
 
     var id = transform.primaryInput.id;
     var outputFilename = '${path.url.basenameWithoutExtension(id.path)}'
-        '_static_injector.dart';
+        '_generated_type_factory_maps.dart';
     var outputPath = path.url.join(path.url.dirname(id.path), outputFilename);
     _generatedAssetId = new AssetId(id.package, outputPath);
 
@@ -185,7 +185,7 @@ class _Processor {
   }
 
   /**
-   * Checks if the element is annotated with one of the known injectablee
+   * Checks if the element is annotated with one of the known injectable
    * annotations.
    */
   bool _isElementAnnotated(Element e) {
@@ -317,10 +317,10 @@ class _Processor {
 
       factoriesBuffer.write('  $typeName: (p) => new $typeName(');
       factoriesBuffer.write(new List.generate(ctor.parameters.length, (i) => 'p[$i]').join(', '));
-      factoriesBuffer.write(')\n');
+      factoriesBuffer.write('),\n');
 
       paramsBuffer.write('  $typeName: ');
-      paramsBuffer.write(ctor.parameters.length == 0 ? 'const [' : '[');
+      paramsBuffer.write(ctor.parameters.length == 0 ? 'const[' : '[');
       var params = ctor.parameters.map((param) {
         var typeName = resolveClassName(param.type.element);
         List<ClassElement> annotations = [];
@@ -328,12 +328,12 @@ class _Processor {
           annotations = param.metadata.map(
               (item) => item.element.returnType.element);
         }
-        var annotationsSuffix =
-            annotations.isNotEmpty ? ', ${annotations.first}' : '';
-        var keyName = '_KEY_${param.type.name}_$annotationsSuffix';
+
+        var keyName = '_KEY_${param.type.name}' +
+            (annotations.isNotEmpty ? '_${annotations.first}' : '');
         if (addedKeys.add(keyName)) {
           keysBuffer.writeln('final Key $keyName = new Key($typeName' +
-              (annotations.isNotEmpty ? ', ${resolveClassName(annotationsSuffix)});' : ');'));
+              (annotations.isNotEmpty ? ', ${resolveClassName(annotations.first)});' : ');'));
         }
         return keyName;
       });
@@ -342,12 +342,13 @@ class _Processor {
 
     var outputBuffer = new StringBuffer();
 
-    _writeStaticInjectorHeader(transform.primaryInput.id, outputBuffer);
+    _writeHeader(transform.primaryInput.id, outputBuffer);
     usedLibs.forEach((lib) {
       if (lib.isDartCore) return;
       var uri = resolver.getImportUri(lib, from: _generatedAssetId);
       outputBuffer.write('import \'$uri\' as ${prefixes[lib]};\n');
     });
+    outputBuffer.write('\n');
     outputBuffer.write(keysBuffer);
     outputBuffer.write('final Map<Type, Factory> typeFactories = <Type, Factory>{\n');
     outputBuffer.write(factoriesBuffer);
@@ -364,14 +365,13 @@ class _Processor {
   }
 }
 
-void _writeStaticInjectorHeader(AssetId id, StringSink sink) {
+void _writeHeader(AssetId id, StringSink sink) {
   var libName = path.withoutExtension(id.path).replaceAll('/', '.');
   libName = libName.replaceAll('-', '_');
   sink.write('''
-library ${id.package}.$libName.generated_static_injector;
+library ${id.package}.$libName.generated_type_factory_maps;
 
 import 'package:di/di.dart';
-import 'package:di/static_injector.dart';
 
 ''');
 }

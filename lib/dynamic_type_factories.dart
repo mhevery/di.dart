@@ -3,6 +3,8 @@ library di.dynamic_type_factories;
 import 'di.dart';
 import 'src/mirrors.dart';
 
+TypeReflector getTypeReflector() => new DynamicTypeFactories();
+
 class DynamicTypeFactories extends TypeReflector {
   final List<Factory> _factories = new List<Factory>();
   final List<List<Key>> _parameterKeys = new List<List<Key>>();

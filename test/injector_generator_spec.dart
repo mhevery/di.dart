@@ -23,7 +23,7 @@ main() {
       [new InjectorGenerator(options, resolvers)]
     ];
 
-    it('transforms imports', () {
+    iit('transforms imports', () {
       return generates(phases,
           inputs: {
             'a|web/main.dart': 'import "package:a/car.dart"; main() {}',
@@ -51,11 +51,19 @@ main() {
             "import 'package:a/engine.dart' as import_1;",
             "import 'package:a/seat.dart' as import_2;",
           ],
-          generators: [
-            'import_0.Car: (f) => new import_0.Car(f(import_1.Engine), '
-                'f(import_2.Seat)),',
-            'import_1.Engine: (f) => new import_1.Engine(),',
-            'import_2.Seat: (f) => new import_2.Seat(),',
+          keys: [
+            'final Key _KEY_Engine = new Key(import_1.Engine);',
+            'final Key _KEY_Seat = new Key(import_2.Seat);',
+          ],
+          factories: [
+            'import_0.Car: (p) => new import_0.Car(p[0], p[1]),',
+            'import_1.Engine: (p) => new import_1.Engine(),',
+            'import_2.Seat: (p) => new import_2.Seat(),',
+          ],
+          paramKeys: [
+            'import_0.Car: [_KEY_Engine, _KEY_Seat],',
+            'import_1.Engine: const[],',
+            'import_2.Seat: const[],'
           ]);
     });
 
@@ -74,8 +82,11 @@ main() {
           imports: [
             "import 'package:a/a.dart' as import_0;",
           ],
-          generators: [
-            'import_0.Parameterized: (f) => new import_0.Parameterized(),',
+          factories: [
+            'import_0.Parameterized: (p) => new import_0.Parameterized(),',
+          ],
+          paramKeys: [
+            'import_0.Parameterized: const[],',
           ],
           messages: [
             'warning: Parameterized is a parameterized type. '
@@ -626,6 +637,7 @@ main() {
 
 Future generates(List<List<Transformer>> phases,
     {Map<String, String> inputs, Iterable<String> imports: const [],
+    Iterable<String> keys: const [],
     Iterable<String> factories: const [],
     Iterable<String> paramKeys: const [],
     Iterable<String> messages: const []}) {
@@ -634,29 +646,27 @@ Future generates(List<List<Transformer>> phases,
 
   imports = imports.map((i) => '$i\n');
   factories = factories.map((t) => '  $t\n');
+  paramKeys = paramKeys.map((t) => '  $t\n');
 
   return tests.applyTransformers(phases,
       inputs: inputs,
       results: {
-          'a|web/main_static_injector.dart': '''
+          'a|web/main_generated_type_factory_maps.dart': '''
 $IMPORTS
-${imports.join('')}
+${imports.join('')}${(keys.length != 0 ? '\n' : '')}${keys.join('\n')}
 final Map<Type, Factory> typeFactories = <Type, Factory>{
-${factories.join('')}
-};
+${factories.join('')}};
 final Map<Type, List<Key>> parameterKeys = {
-${paramKeys.join('')}
-};\n
+${paramKeys.join('')}};
 ''',
       },
       messages: messages);
 }
 
 const String IMPORTS = '''
-library a.web.main.generated_static_injector;
+library a.web.main.generated_type_factory_maps;
 
 import 'package:di/di.dart';
-import 'package:di/static_injector.dart';
 ''';
 
 const String CLASS_ENGINE = '''

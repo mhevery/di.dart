@@ -2,6 +2,8 @@ library di.generated_type_factories;
 
 import 'di.dart';
 
+TypeReflector getTypeReflector() => new GeneratedTypeFactories();
+
 class GeneratedTypeFactories extends TypeReflector {
   static GeneratedTypeFactories _instance;
 

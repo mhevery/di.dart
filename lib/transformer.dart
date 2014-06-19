@@ -54,6 +54,7 @@ import 'dart:io';
 import 'package:barback/barback.dart';
 import 'package:code_transformers/resolver.dart';
 import 'package:di/transformer/injector_generator.dart';
+import 'package:di/transformer/initializer_transformer.dart';
 import 'package:di/transformer/options.dart';
 import 'package:path/path.dart' as path;
 
@@ -123,5 +124,9 @@ _readStringListValue(Map args, String name) {
   return results;
 }
 
-List<List<Transformer>> _createPhases(TransformOptions options) =>
-    [[new InjectorGenerator(options, new Resolvers(options.sdkDirectory))]];
+List<List<Transformer>> _createPhases(TransformOptions options) {
+  var resolvers = new Resolvers(options.sdkDirectory);
+  return [[new InjectorGenerator(options, resolvers),
+    new InitializerTransformer(options, resolvers)
+  ]];
+}

@@ -2,33 +2,34 @@ library di.key;
 
 import 'dart:collection';
 
+
 /**
  * Key to which an [Injector] binds a [Provider].  This is a pair consisting of
  * a [type] and an optional [annotation].
  */
 class Key {
+  // TODO: experiment with having a separate map for non-annotated types (perf)
   static Map<Type, Map<Type, Key>> _typeToAnnotationToKey = new Map.identity();
   static List<Key> _keys = new List();
   static int _numInstances = 0;
   /// The number of instances of [Key] created.
   static int get numInstances => _numInstances;
 
-  // TODO: write tests for this
-  static Key getByID(int id) {
-    if (id < _keys.length) {
-      var key = _keys[id];
-      if (key != null) {
-        return key;
-      }
-    }
-    throw "Key.getByID: No key cached for id $id.";
-  }
-
   final Type type;
   /// Optional.
   final Type annotation;
   /// Assigned via auto-increment.
   final int id;
+
+  int _data;
+  int get data => _data;
+  set data(int d) {
+    if (_data == null) {
+      _data = d;
+      return;
+    }
+    throw "Key($type).data has already been set to $_data.";
+  }
 
   int get hashCode => id;
 
@@ -52,33 +53,13 @@ class Key {
     return key;
   }
 
-  Key._(this.type, this.annotation, this.id);
-
-  // TODO: Write tests for this
-  factory Key.withID(int id, Type type, [Type annotation]) {
-    if (id < _numInstances) {
-      var key = _keys[id];
-      if (key.type == type && key.annotation == annotation){
-        return key;
-      } else {
-        throw "Key.withID: Key id '$id' is already taken by ${key.type}" +
-            key.annotation == null ? "." : " with annotation ${key.annotation}.";
-      }
-    }
-    assert(id - _numInstances < 64); //wastes memory with blank space in each injector
-    var annotationToKey = _typeToAnnotationToKey[type];
-    if (annotationToKey != null) {
-      var key = annotationToKey[annotation];
-      if (key != null) {
-        throw "Key.withID: type '$type' " +
-            key.annotation == null ? "" : "with annotation ${key.annotation} " +
-            "already has a key with id '${key.id}'.";
-      }
-    }
-    _keys.length = id + 1;
-    _numInstances = id + 1;
-    return _keys[id + 1] = new Key._(type, annotation, id);
+  // TODO: consider deprecating factory constructor and move it here instead
+  // Or delete this method.
+  static Key getKeyFor(Type type, [Type annotation]) {
+    return new Key(type, annotation);
   }
+
+  Key._(this.type, this.annotation, this.id);
 
   String toString() {
     String asString = type.toString();

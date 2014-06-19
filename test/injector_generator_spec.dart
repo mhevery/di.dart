@@ -626,21 +626,27 @@ main() {
 
 Future generates(List<List<Transformer>> phases,
     {Map<String, String> inputs, Iterable<String> imports: const [],
-    Iterable<String> generators: const [],
+    Iterable<String> factories: const [],
+    Iterable<String> paramKeys: const [],
     Iterable<String> messages: const []}) {
 
   inputs['inject|lib/inject.dart'] = PACKAGE_INJECT;
 
   imports = imports.map((i) => '$i\n');
-  generators = generators.map((t) => '  $t\n');
+  factories = factories.map((t) => '  $t\n');
 
   return tests.applyTransformers(phases,
       inputs: inputs,
       results: {
           'a|web/main_static_injector.dart': '''
 $IMPORTS
-${imports.join('')}$BOILER_PLATE
-${generators.join('')}$FOOTER
+${imports.join('')}
+final Map<Type, Factory> typeFactories = <Type, Factory>{
+${factories.join('')}
+};
+final Map<Type, List<Key>> parameterKeys = {
+${paramKeys.join('')}
+};\n
 ''',
       },
       messages: messages);
@@ -652,18 +658,6 @@ library a.web.main.generated_static_injector;
 import 'package:di/di.dart';
 import 'package:di/static_injector.dart';
 ''';
-
-const String BOILER_PLATE = '''
-Injector createStaticInjector({List<Module> modules, String name,
-    bool allowImplicitInjection: false}) =>
-  new StaticInjector(modules: modules, name: name,
-      allowImplicitInjection: allowImplicitInjection,
-      typeFactories: factories);
-
-final Map<Type, TypeFactory> factories = <Type, TypeFactory>{''';
-
-const String FOOTER = '''
-};''';
 
 const String CLASS_ENGINE = '''
     import 'package:inject/inject.dart';

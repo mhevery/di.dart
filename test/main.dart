@@ -15,6 +15,8 @@ import 'package:guinness/guinness.dart';
 import 'package:matcher/matcher.dart' as matcher;
 import 'package:di/di.dart';
 import 'package:di/annotations.dart';
+import 'package:di/generated_type_factories.dart';
+import 'package:di/dynamic_type_factories.dart';
 
 import 'test_annotations.dart';
 // Generated file. Run ../test_tf_gen.sh.
@@ -190,13 +192,13 @@ class ThrowOnce {
 void main() {
   moduleTest();
 
-  TypeReflector reflector = new GeneratedTypeFactories(
+  new GeneratedTypeFactories(
       type_factories_gen.typeFactories, type_factories_gen.parameterKeys);
   createInjectorSpec('Static ModuleInjector ',
       (modules, [name]) => new ModuleInjector(modules),
-      () => new Module.withReflector(reflector));
+      () => new Module.withReflector(new GeneratedTypeFactories()));
 
-  reflector = new DynamicTypeFactories();
+  TypeReflector reflector = new DynamicTypeFactories();
   createInjectorSpec('Dynamic ModuleInjector ',
       (modules, [name]) => new ModuleInjector(modules),
       () => new Module.withReflector(reflector));
@@ -270,11 +272,11 @@ createInjectorSpec(String injectorName, InjectorFactory injectorFactory,
     });
 
     it('should fail if no binding is found', () {
-      var injector = injectorFactory([]);
+      var injector = injectorFactory([moduleFactory()..bind(Car)]);
       expect(() {
-        injector.get(Engine);
+        injector.get(Car);
       }).toThrowWith(message: 'No provider found for Engine! '
-                              '(resolving Engine)');
+                              '(resolving Car -> Engine)');
     });
 
 
@@ -320,11 +322,13 @@ createInjectorSpec(String injectorName, InjectorFactory injectorFactory,
 
 
     it('should error while resolving parameterized types', () {
-      var injector = injectorFactory([moduleFactory()
-            ..bind(ParameterizedType)
-            ..bind(ParameterizedDependency)
-      ]);
-      expect(() => injector.get(ParameterizedDependency)).toThrowWith();
+      expect((){
+        var injector = injectorFactory([moduleFactory()
+          ..bind(ParameterizedType)
+          ..bind(ParameterizedDependency)
+        ]);
+        injector.get(ParameterizedDependency);
+      }).toThrowWith();
     });
 
 

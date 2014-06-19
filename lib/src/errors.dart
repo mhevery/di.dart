@@ -33,6 +33,13 @@ abstract class ResolvingError extends Error {
     return buffer.toString();
   }
 
+  Object get rootNode {
+    if (parent == null) {
+      return node;
+    }
+    return parent.rootNode;
+  }
+
   String toString() => resolveChain;
 }
 
@@ -43,20 +50,12 @@ class NoProviderError extends ResolvingError {
   ];
   final NoProviderError parent;
 
-  // To throw different error if lack of provider is due to injecting primitive type
-  Key rootPrimitiveType() {
-    if (parent == null) {
-      return _PRIMITIVE_TYPES.contains(node) ? node : null;
-    }
-    return parent.rootPrimitiveType();
-  }
-
   String toString(){
-    var primitive = rootPrimitiveType();
-    if (primitive != null) {
-      return 'Cannot inject a primitive type of $primitive! $resolveChain';
+    var root = rootNode;
+    if (_PRIMITIVE_TYPES.contains(root)) {
+      return 'Cannot inject a primitive type of $root! $resolveChain';
     }
-    return "No provider found for $node! $resolveChain";
+    return "No provider found for $root! $resolveChain";
   }
   NoProviderError(key, [this.parent]): super(key);
 }

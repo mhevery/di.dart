@@ -9,6 +9,7 @@ import 'package:di/transformer/options.dart';
 import 'package:path/path.dart' as path;
 
 import 'refactor.dart';
+import 'process_classes.dart';
 
 /**
  * Pub transformer which generates type factories for all injectable types
@@ -306,23 +307,37 @@ class _Processor {
       return '$prefix${type.name}';
     }
 
+    var keysBuffer = new StringBuffer();
     var factoriesBuffer = new StringBuffer();
+    var paramsBuffer = new StringBuffer();
+    var addedKeys = new Set<String>();
     for (var ctor in constructors) {
       var type = ctor.enclosingElement;
       var typeName = resolveClassName(type);
-      factoriesBuffer.write('  $typeName: (f) => new $typeName(');
+
+      factoriesBuffer.write('  $typeName: (p) => new $typeName(');
+      factoriesBuffer.write(new List.generate(ctor.parameters.length, (i) => 'p[$i]').join(', '));
+      factoriesBuffer.write(')\n');
+
+      paramsBuffer.write('  $typeName: ');
+      paramsBuffer.write(ctor.parameters.length == 0 ? 'const [' : '[');
       var params = ctor.parameters.map((param) {
         var typeName = resolveClassName(param.type.element);
-        var annotations = [];
+        List<ClassElement> annotations = [];
         if (param.metadata.isNotEmpty) {
           annotations = param.metadata.map(
-              (item) => resolveClassName(item.element.returnType.element));
+              (item) => item.element.returnType.element);
         }
         var annotationsSuffix =
             annotations.isNotEmpty ? ', ${annotations.first}' : '';
-        return 'f($typeName$annotationsSuffix)';
+        var keyName = '_KEY_${param.type.name}_$annotationsSuffix';
+        if (addedKeys.add(keyName)) {
+          keysBuffer.writeln('final Key $keyName = new Key($typeName' +
+              (annotations.isNotEmpty ? ', ${resolveClassName(annotationsSuffix)});' : ');'));
+        }
+        return keyName;
       });
-      factoriesBuffer.write('${params.join(', ')}),\n');
+      paramsBuffer.write('${params.join(', ')}],\n');
     }
 
     var outputBuffer = new StringBuffer();
@@ -333,9 +348,12 @@ class _Processor {
       var uri = resolver.getImportUri(lib, from: _generatedAssetId);
       outputBuffer.write('import \'$uri\' as ${prefixes[lib]};\n');
     });
-    _writePreamble(outputBuffer);
+    outputBuffer.write(keysBuffer);
+    outputBuffer.write('final Map<Type, Factory> typeFactories = <Type, Factory>{\n');
     outputBuffer.write(factoriesBuffer);
-    _writeFooter(outputBuffer);
+    outputBuffer.write('};\nfinal Map<Type, List<Key>> parameterKeys = {\n');
+    outputBuffer.write(paramsBuffer);
+    outputBuffer.write('};\n');
 
     return outputBuffer.toString();
   }
@@ -355,23 +373,5 @@ library ${id.package}.$libName.generated_static_injector;
 import 'package:di/di.dart';
 import 'package:di/static_injector.dart';
 
-''');
-}
-
-void _writePreamble(StringSink sink) {
-  sink.write('''
-Injector createStaticInjector({List<Module> modules, String name,
-    bool allowImplicitInjection: false}) =>
-  new StaticInjector(modules: modules, name: name,
-      allowImplicitInjection: allowImplicitInjection,
-      typeFactories: factories);
-
-final Map<Type, TypeFactory> factories = <Type, TypeFactory>{
-''');
-}
-
-void _writeFooter(StringSink sink) {
-  sink.write('''
-};
 ''');
 }

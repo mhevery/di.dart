@@ -9,6 +9,8 @@ import 'package:analyzer/src/generated/element.dart';
 import 'package:analyzer/src/generated/engine.dart';
 import 'package:path/path.dart' as path;
 
+import 'transformer/process_classes.dart';
+
 import 'dart:io';
 
 const String PACKAGE_PREFIX = 'package:';
@@ -86,74 +88,10 @@ Map<Chunk, String> printLibraryCode(Map<String, String> typeToImport,
     factories[chunk] = new StringBuffer();
     keys[chunk] = new StringBuffer();
     paramLists[chunk] = new StringBuffer();
-    Map<String, String> toBeAdded = new Map<String, String>();
-    Set<String> addedKeys = new Set();
-    classes.forEach((ClassElement clazz) {
-      StringBuffer factory = new StringBuffer();
-      StringBuffer paramList = new StringBuffer();
-      List<String> factoryKeys = new List<String>();
-      bool skip = false;
-      if (addedKeys.add(clazz.type.name)){
-        toBeAdded[clazz.type.name]=
-          'final Key _KEY_${clazz.type.name} = new Key(${resolveClassIdentifier(clazz.type)});\n';
-      }
-      factoryKeys.add('${clazz.type.name}');
 
-      ConstructorElement constr =
-          clazz.constructors.firstWhere((c) => c.name.isEmpty,
-          orElse: () {
-            throw 'Unable to find default constructor for '
-                  '$clazz in ${clazz.source}';
-          });
-      factory.write('_KEY_${clazz.type.name}: (p) => new ${resolveClassIdentifier(clazz.type)}(');
-      factory.write(new List.generate(constr.parameters.length, (i) => 'p[$i]').join(', '));
-      factory.write('),\n');
+    process_classes(classes, keys[chunk], factories[chunk], paramLists[chunk],
+                    resolveClassIdentifier);
 
-      if (constr.parameters.isEmpty){
-        paramList.write('_KEY_${clazz.type.name}: const [');
-      } else {
-        paramList.write('_KEY_${clazz.type.name}: [');
-        paramList.write(constr.parameters.map((param) {
-          if (param.type.element is! ClassElement) {
-            throw 'Unable to resolve type for constructor parameter '
-                  '"${param.name}" for type "$clazz" in ${clazz.source}';
-          }
-          if (_isParameterized(param)) {
-            print('WARNING: parameterized types are not supported: '
-                  '$param in $clazz in ${clazz.source}. Skipping!');
-            skip = true;
-          }
-          var annotations = [];
-          if (param.metadata.isNotEmpty) {
-            annotations = param.metadata.map(
-                (item) => item.element.returnType.name);
-          }
-          String key_name = annotations.isNotEmpty ?
-            '${param.type.name}_${annotations.first}' : param.type.name;
-          String output = '_KEY_${key_name}';
-          if (addedKeys.add(key_name)){
-            var annotationParam = "";
-            if (param.metadata.isNotEmpty) {
-              annotationParam = ", ${resolveClassIdentifier(param.metadata.first.element.returnType)}";
-            }
-            toBeAdded['$key_name']='final Key _KEY_${key_name} = '+
-                     'new Key(${resolveClassIdentifier(param.type)}$annotationParam);\n';
-          }
-          return output;
-        }).join(', '));
-      }
-      paramList.write('],\n');
-      if (!skip) {
-        factoryKeys.forEach((key) {
-          var keyString = toBeAdded.remove(key);
-          keys[chunk].write(keyString);
-        });
-        factories[chunk].write(factory);
-        paramLists[chunk].write(paramList);
-      }
-    });
-    keys[chunk].writeAll(toBeAdded.values);
-    toBeAdded.clear();
     StringBuffer code = new StringBuffer();
     String libSuffix = chunk.library == null ? '' : '.${chunk.library.name}';
     code.write('library di.generated.type_factories$libSuffix;\n');
@@ -163,8 +101,8 @@ Map<Chunk, String> printLibraryCode(Map<String, String> typeToImport,
     });
     code..write('import "package:di/key.dart" show Key;\n')
         ..write(keys[chunk])
-        ..write('Map<Key, Function> typeFactories = {\n${factories[chunk]}};\n')
-        ..write('Map<Key, List<Key>> parameterKeys = {\n${paramLists[chunk]}};\n')
+        ..write('Map<Type, Function> typeFactories = {\n${factories[chunk]}};\n')
+        ..write('Map<Type, List<Key>> parameterKeys = {\n${paramLists[chunk]}};\n')
         ..write('main() {}\n');
     result[chunk] = code.toString();
   });
@@ -174,17 +112,6 @@ Map<Chunk, String> printLibraryCode(Map<String, String> typeToImport,
 
 String _calculateImportPrefix(String import, List<String> imports) =>
     'import_${imports.indexOf(import)}';
-
-_isParameterized(ParameterElement param) {
-  String typeName = param.type.toString();
-
-  if (typeName.indexOf('<') > -1) {
-    String parameters =
-        typeName.substring(typeName.indexOf('<') + 1, typeName.length - 1);
-    return parameters.split(', ').any((p) => p != 'dynamic');
-  }
-  return false;
-}
 
 class CompilationUnitVisitor {
   List<String> imports;

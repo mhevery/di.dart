@@ -1,7 +1,7 @@
 library di;
 
 import 'key.dart';
-import 'dart:mirrors';
+import "dynamic_type_factories.dart";
 
 export 'key.dart' show Key;
 

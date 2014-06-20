@@ -22,7 +22,9 @@ class InjectorGenerator extends Transformer with ResolverTransformer {
     this.resolvers = resolvers;
   }
 
-  Future<bool> shouldApplyResolver(Asset asset) => options.isDartEntry(asset);
+  Future<bool> shouldApplyResolver(Asset asset) {
+    return options.isDartEntry(asset);
+  }
 
   applyResolver(Transform transform, Resolver resolver) =>
       new _Processor(transform, resolver, options).process();
@@ -390,6 +392,7 @@ void _writeHeader(AssetId id, StringSink sink) {
 library ${id.package}.$libName.generated_type_factory_maps;
 
 import 'package:di/di.dart';
+import 'package:di/generated_type_factories.dart';
 
 ''');
 }

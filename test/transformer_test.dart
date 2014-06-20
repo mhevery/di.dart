@@ -718,7 +718,7 @@ main() {
         });
       });
 
-      it('transforms di.dart import', () {
+      iit('transforms di.dart import', () {
         return tests.applyTransformers(phases,
         inputs: {
             'a|web/main.dart': '''
@@ -745,7 +745,7 @@ main(){
             'di|lib/di.dart': '''
 library di;
 
-import 'generated_type_factories.dart';;
+import 'generated_type_factories.dart';
 '''
         });
       });
@@ -786,6 +786,7 @@ const String IMPORTS = '''
 library a.web.main.generated_type_factory_maps;
 
 import 'package:di/di.dart';
+import 'package:di/generated_type_factories.dart';
 ''';
 
 const String CLASS_ENGINE = '''

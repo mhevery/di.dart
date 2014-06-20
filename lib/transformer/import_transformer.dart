@@ -18,11 +18,15 @@ class ImportTransformer extends Transformer with ResolverTransformer {
     this.resolvers = resolvers;
   }
 
-  Future<bool> shouldApplyResolver(Asset asset) {
+  Future<bool> isPrimary(AssetId id) {
     var di = new AssetId.parse('di|lib/di.dart');
-    print("> ${asset.id}");
-    return new Future.value(di == asset.id);
+    if (di == id) {
+      return new Future.value(true);
+    }
+    return new Future.value(false);
   }
+
+  Future<bool> shouldApplyResolver(Asset asset) => new Future.value(true);
 
   applyResolver(Transform transform, Resolver resolver) {
     Asset asset = transform.primaryInput;
@@ -33,7 +37,7 @@ class ImportTransformer extends Transformer with ResolverTransformer {
 
     var dir = unit.directives.where((d) =>
         d is ImportDirective && d.uriContent == 'dynamic_type_factories.dart').first;
-    transaction.edit(dir.offest, dir.end, "import 'generated_type_factories.dart';");
+    transaction.edit(dir.offset, dir.end, "import 'generated_type_factories.dart';");
 
     commitTransaction(transaction, transform);
   }

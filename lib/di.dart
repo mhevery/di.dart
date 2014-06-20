@@ -2,7 +2,7 @@ library di;
 
 import 'key.dart';
 
-// TRANSFORMER replaces wtih
+// TRANSFORMER replaces with
 // import 'generated_type_factories.dart';
 import 'dynamic_type_factories.dart';
 

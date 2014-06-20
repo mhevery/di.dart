@@ -72,11 +72,27 @@ class _Processor {
     transform.addOutput(
         new Asset.fromString(_generatedAssetId, injectLibContents));
 
-    transformIdentifiers(transform, resolver,
-        identifier: 'di.auto_injector.defaultInjector',
-        replacement: 'createStaticInjector',
-        importPrefix: 'generated_static_injector',
-        importUrl: outputFilename);
+    var lib = resolver.getLibrary(id);
+    var unit = lib.definingCompilationUnit.node;
+    var transaction = resolver.createTextEditTransaction(lib);
+    var last = unit.directives.where((d) => d is ImportDirective).last;
+    transaction.edit(last.end, last.end, '\nimport '
+        "'${path.url.basenameWithoutExtension(id.path)}"
+        "_generated_type_factory_maps.dart' show initializeGeneratedTypeFactories;");
+
+    FunctionExpression main = unit.declarations.where((d) => d.name.toString() == 'main')
+        .first.functionExpression;
+    var body = main.body;
+    if (body is BlockFunctionBody) {
+      var location = body.beginToken.end;
+      transaction.edit(location, location, '\n  initializeGeneratedTypeFactories();');
+    } else if (body is ExpressionFunctionBody) {
+      transaction.edit(body.beginToken.offset, body.endToken.end,
+          "{\n  initializeGeneratedTypeFactories();\n"
+          "  return ${body.expression};\n}");
+    } // EmptyFunctionBody can only appear as abstract methods and constructors.
+
+    commitTransaction(transaction, transform);
   }
 
   /** Resolves the classes for the injectable annotations in the current AST. */
@@ -323,7 +339,7 @@ class _Processor {
       paramsBuffer.write(ctor.parameters.length == 0 ? 'const[' : '[');
       var params = ctor.parameters.map((param) {
         var typeName = resolveClassName(param.type.element);
-        List<ClassElement> annotations = [];
+        Iterable<ClassElement> annotations = [];
         if (param.metadata.isNotEmpty) {
           annotations = param.metadata.map(
               (item) => item.element.returnType.element);
@@ -355,6 +371,8 @@ class _Processor {
     outputBuffer.write('};\nfinal Map<Type, List<Key>> parameterKeys = {\n');
     outputBuffer.write(paramsBuffer);
     outputBuffer.write('};\n');
+    outputBuffer.write('initializeGeneratedTypeFactories() => '
+        'new GeneratedTypeFactories(typeFactories, parameterKeys);\n');
 
     return outputBuffer.toString();
   }

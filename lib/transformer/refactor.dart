@@ -45,12 +45,12 @@ void transformIdentifiers(Transform transform, Resolver resolver,
   if (transaction.hasEdits) {
     _addImport(transaction, unit, importUrl, importPrefix);
   }
-  _commitTransaction(transaction, transform);
+  commitTransaction(transaction, transform);
 }
 
 /// Commits the transaction if there have been edits, otherwise just adds
 /// the input as an output.
-void _commitTransaction(TextEditTransaction transaction, Transform transform) {
+void commitTransaction(TextEditTransaction transaction, Transform transform) {
   var id = transform.primaryInput.id;
 
   if (transaction.hasEdits) {

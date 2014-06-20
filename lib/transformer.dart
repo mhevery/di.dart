@@ -1,5 +1,29 @@
 /**
- * Transformer which generates type factories for static injection.
+ * Static injection transformer which generates, for each injectable type:
+ *
+ * - typeFactory: which is a closure (p) => new Type(p[0], p[1]...) where
+ *     p is an array of injected dependency instances, as specified by
+ * - paramKeys: List<Keys> corresponding to the dependency needing to be injected
+ *    in the positional arguments of the typeFactory.
+ *
+ * These two give an injector the information needed to construct an instance of a
+ * type without using mirrors. They are stored as a Map<Type, [typeFactory|paramKeys]>
+ * and outputted to a file [entry_point_name]_generated_type_factory_maps.dart. Multiple
+ * entry points (main functions) is not supported.
+ *
+ * An import of this file is added to main, and a line is added by the transformer at
+ * the beginning of the main function that initializes the factories by passing them
+ * to DI's GeneratedTypeFactories class to be visible to modules before binding time.
+ * This is necessary as the generated maps must live outside `packages`, and DI cannot
+ * import them from inside `packages`, so it must be explicitly passed in at the start
+ * of the program.
+ *
+ * An import in di.dart is also modified to use the static GeneratedTypeFactories
+ * implementation of TypeReflector instead of the mirror implementation.
+ *
+ * All of the above is taken care of by the transformer. The user only need to
+ * annotate types for the transformer to add them to the generated type factories file,
+ * in addition to enabling the transformer in pubspec.yaml.
  *
  * Types which are considered injectable can be annotated in the following ways:
  *
@@ -54,7 +78,7 @@ import 'dart:io';
 import 'package:barback/barback.dart';
 import 'package:code_transformers/resolver.dart';
 import 'package:di/transformer/injector_generator.dart';
-import 'package:di/transformer/initializer_transformer.dart';
+import 'package:di/transformer/import_transformer.dart';
 import 'package:di/transformer/options.dart';
 import 'package:path/path.dart' as path;
 
@@ -126,7 +150,8 @@ _readStringListValue(Map args, String name) {
 
 List<List<Transformer>> _createPhases(TransformOptions options) {
   var resolvers = new Resolvers(options.sdkDirectory);
-  return [[new InjectorGenerator(options, resolvers),
-    new InitializerTransformer(options, resolvers)
-  ]];
+  return [[
+      new InjectorGenerator(options, resolvers),
+      new ImportTransformer(options, resolvers)],
+  ];
 }

@@ -1,13 +1,11 @@
 import 'package:di/di.dart';
 import 'package:benchmark_harness/benchmark_harness.dart';
+import 'package:di/generated_type_factories.dart';
 
 import 'injector_benchmark_common.dart';
 import 'static_injector_benchmark.dart';
 
 import 'dart:profiler';
-
-var testTag = new UserTag('testTag');
-var setupTag = new UserTag('setupTag');
 
 class TestInjector {
   const TestInjector();
@@ -37,16 +35,6 @@ class CreateObjectsOnly extends BenchmarkBase{
     print(count);
   }
 }
-
-//class CreateObjectWithTypeFactory extends BenchmarkBase {
-//  final typeFactories;
-//
-//  CreateObjectWithTypeFactory(name, this.typeFactories) : super(name);
-//
-//  void run() {
-//    var b1 = typeFactories[]
-//  }
-//}
 
 class CreateSingleInjector extends InjectorBenchmark {
 
@@ -89,78 +77,20 @@ class CreateInjectorAndChild extends InjectorBenchmark {
   }
 }
 
-@TestInjector()
-class BasicInjector {
-
-  Map<Type, Function> typeFactories;
-  BasicInjector parent;
-
-  Map<Type, Object> instances = new Map();
-
-  BasicInjector(modules, this.typeFactories, [this.parent]);
-
-  Object getFromParent(Type type) {
-    var injector = this;
-    var instance;
-    do {
-      if (injector.parent == null) {
-        return newInstanceOf(type);
-      }
-      injector = injector.parent;
-      instance = injector.instances[type];
-    } while (instance == null);
-    return instance;
-  }
-
-  Object newInstanceOf(type) {
-    var instance = typeFactories[type]((t){
-      var inst = instances[type];
-      if (inst == null){
-        inst = getFromParent(t);
-      }
-      return inst;
-    });
-    instances[type] = instance;
-    return instance;
-  }
-
-  Object getByKey(Key key) {
-    Type type = key.type;
-    var instance = instances[type];
-    if (instance == null){
-      instance = newInstanceOf(type);
-    }
-    return instance;
-  }
-
-  BasicInjector createChild(modules) => new BasicInjector(modules, typeFactories, this);
-}
-
 class InjectByKey extends InjectorBenchmark {
-  final Key KEY_A;
-  final Key KEY_B;
 
   InjectByKey(name, injectorFactory)
-    : super(name, injectorFactory),
-      KEY_A = new Key(A),
-      KEY_B = new Key(B);
+    : super(name, injectorFactory);
 
   void run() {
+    var injector = new ModuleInjector([module]);
+    var childInjector = new ModuleInjector([module], injector);
 
-    do {
-      var previousTag = setupTag.makeCurrent();
-      var injector = new ModuleInjector([module]);
-      var childInjector = injector.createChild([module]);
+    injector.getByKey(KEY_A);
+    injector.getByKey(KEY_B);
 
-      testTag.makeCurrent();
-      injector.getByKey(KEY_A);
-      injector.getByKey(KEY_B);
-
-      childInjector.getByKey(KEY_A);
-      childInjector.getByKey(KEY_B);
-      previousTag.makeCurrent();
-
-    } while(false);
+    childInjector.getByKey(KEY_A);
+    childInjector.getByKey(KEY_B);
   }
 }
 
@@ -174,22 +104,20 @@ main() {
   };
 
   const PAD_LENGTH = 35;
-  GeneratedTypeFactories generatedTypeFactories = new GeneratedTypeFactories(typeFactories, paramKeys);
+  GeneratedTypeFactories generatedTypeFactories =
+      new GeneratedTypeFactories(typeFactories, paramKeys);
 
-//  new CreateObjectsOnly("Create objects manually without DI".padRight(PAD_LENGTH)).report();
-//  new CreateSingleInjector('.. and create an injector'.padRight(PAD_LENGTH),
-//      generatedTypeFactories
-//  ).report();
-//  new CreateInjectorAndChild('.. and a child injector'.padRight(PAD_LENGTH),
-//      generatedTypeFactories
-//  ).report();
-//  new InjectorBenchmark('DI using ModuleInjector'.padRight(PAD_LENGTH),
-//  generatedTypeFactories
-//  ).report();
+  new CreateObjectsOnly("Create objects manually without DI".padRight(PAD_LENGTH)).report();
+  new CreateSingleInjector('.. and create an injector'.padRight(PAD_LENGTH),
+      generatedTypeFactories
+  ).report();
+  new CreateInjectorAndChild('.. and a child injector'.padRight(PAD_LENGTH),
+      generatedTypeFactories
+  ).report();
+  new InjectorBenchmark('DI using ModuleInjector'.padRight(PAD_LENGTH),
+      generatedTypeFactories
+  ).report();
   new InjectByKey('.. and precompute keys'.padRight(PAD_LENGTH),
       generatedTypeFactories
   ).report();
-//  new InjectByKey('DI using BasicInjector'.padRight(PAD_LENGTH),
-//      (m) => new BasicInjector(m, oldTypeFactories)
-//  ).report();
 }

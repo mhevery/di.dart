@@ -6,6 +6,7 @@ import 'src/mirrors.dart';
 TypeReflector getTypeReflector() => new DynamicTypeFactories();
 
 class DynamicTypeFactories extends TypeReflector {
+  /// caches of results calculated from mirroring
   final List<Factory> _factories = new List<Factory>();
   final List<List<Key>> _parameterKeys = new List<List<Key>>();
 
@@ -19,7 +20,6 @@ class DynamicTypeFactories extends TypeReflector {
     return factory;
   }
 
-
   List<Key> parameterKeysFor(Type type) {
     var key = new Key(type);
     _resize(key.id);
@@ -30,7 +30,7 @@ class DynamicTypeFactories extends TypeReflector {
     return parameterKeys;
   }
 
-  _resize(maxId) {
+  _resize(int maxId) {
     if (_factories.length <= maxId) {
       _factories.length = maxId + 1;
       _parameterKeys.length = maxId + 1;
@@ -51,16 +51,18 @@ class DynamicTypeFactories extends TypeReflector {
       ParameterMirror p = ctor.parameters[pos];
       if (p.type.qualifiedName == #dynamic) {
         var name = MirrorSystem.getName(p.simpleName);
-        throw new DynamicReflectorError("Error getting params for '$type': The '$name' parameter must be typed");
+        throw new DynamicReflectorError("Error getting params for '$type': "
+            "The '$name' parameter must be typed");
       }
       if (p.type is TypedefMirror) {
-        throw new DynamicReflectorError(
-            "Typedef '${p.type}' in constructor '${classMirror.simpleName}' is not supported.");
+        throw new DynamicReflectorError("Typedef '${p.type}' in constructor "
+            "'${classMirror.simpleName}' is not supported.");
       }
       if (p.metadata.length > 1) {
         throw new DynamicReflectorError(
-            "Constructor '${classMirror.simpleName}' parameter $pos of type '${p.type}' "
-            "can have only zero on one annotation, but it has '${p.metadata}'.");
+            "Constructor '${classMirror.simpleName}' parameter $pos of type "
+            "'${p.type}' can have only zero on one annotation, but it has "
+            "'${p.metadata}'.");
       }
       var pType = (p.type as ClassMirror).reflectedType;
       var annotationType = p.metadata.isNotEmpty ? p.metadata.first.type.reflectedType : null;
@@ -69,11 +71,10 @@ class DynamicTypeFactories extends TypeReflector {
   }
 
   ClassMirror _reflectClass(Type type) {
-    // TODO: cache this
     ClassMirror classMirror = reflectType(type);
     if (classMirror is TypedefMirror) {
-      throw new DynamicReflectorError(
-          'No implementation provided for ${getSymbolName(classMirror.qualifiedName)} typedef!');
+      throw new DynamicReflectorError('No implementation provided for '
+          '${getSymbolName(classMirror.qualifiedName)} typedef!');
     }
 
     MethodMirror ctor = classMirror.declarations[classMirror.simpleName];

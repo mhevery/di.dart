@@ -2,7 +2,6 @@ library di.key;
 
 import 'dart:collection';
 
-
 /**
  * Key to which an [Injector] binds a [Provider].  This is a pair consisting of
  * a [type] and an optional [annotation].
@@ -22,7 +21,7 @@ class Key {
   final int id;
 
   int _data;
-  int get data => _data;
+  int get uid => _data;
   set data(int d) {
     if (_data == null) {
       _data = d;
@@ -53,12 +52,6 @@ class Key {
     return key;
   }
 
-  // TODO: consider deprecating factory constructor and move it here instead
-  // Or delete this method.
-  static Key getKeyFor(Type type, [Type annotation]) {
-    return new Key(type, annotation);
-  }
-
   Key._(this.type, this.annotation, this.id);
 
   String toString() {
@@ -69,3 +62,6 @@ class Key {
     return asString;
   }
 }
+
+/// shortcut function
+Key key(Type type, [Type annotation]) => new Key(type, annotation);

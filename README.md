@@ -7,7 +7,7 @@
 Add dependency to your pubspec.yaml.
 
     dependencies:
-      di: ">=0.0.39 <1.2.0"
+      di: ">=0.0.39 <2.0.0"
 
 Then, run `pub install`.
 

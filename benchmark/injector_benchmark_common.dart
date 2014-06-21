@@ -18,12 +18,12 @@ class InjectorBenchmark extends BenchmarkBase {
 
   void run() {
     Injector injector = new ModuleInjector([module]);
-    injector.get(A);
-    injector.get(B);
+    injector.getByKey(KEY_A);
+    injector.getByKey(KEY_B);
 
-    var childInjector = injector.createChild([module]);
-    childInjector.get(A);
-    childInjector.get(B);
+    var childInjector = new ModuleInjector([module], injector);
+    childInjector.getByKey(KEY_A);
+    childInjector.getByKey(KEY_B);
   }
 
   setup() {
@@ -31,13 +31,18 @@ class InjectorBenchmark extends BenchmarkBase {
       ..type(A)
       ..type(B)
       ..type(C)
-      ..type(C) // TODO: , withAnnotation: AnnOne, implementedBy: COne )
+      ..type(C, withAnnotation: AnnOne, implementedBy: COne )
       ..type(D)
       ..type(E)
-      ..type(E); // TODO: , withAnnotation: AnnTwo, implementedBy: ETwo )
-//      ..type(F)
-//      ..type(G);
-
+      ..type(E, withAnnotation: AnnTwo, implementedBy: ETwo )
+      ..type(F)
+      ..type(G);
+  
+    KEY_A = new Key(A);
+    KEY_B = new Key(B);
+    KEY_C = new Key(C);
+    KEY_D = new Key(D);
+    KEY_E = new Key(E);
   }
 
   teardown() {
@@ -108,17 +113,25 @@ class G {
 }
 
 var typeFactories = {
-    new Key(A): (p) => new A(p[0], p[1]),
-    new Key(B): (p) => new B(p[0], p[1]),
-    new Key(C): (p) => new C(),
-    new Key(D): (p) => new D(),
-    new Key(E): (p) => new E(),
+    A: (p) => new A(p[0], p[1]),
+    B: (p) => new B(p[0], p[1]),
+    C: (p) => new C(),
+    D: (p) => new D(),
+    E: (p) => new E(),
+    COne: (p) => new COne(),
+    ETwo: (p) => new ETwo(),
+    F: (p) => new F(p[0], p[1]),
+    G: (p) => new G(p[0]),
 };
 
 var paramKeys = {
-    new Key(A): [new Key(B), new Key(C)],
-    new Key(B): [new Key(D), new Key(E)],
-    new Key(C): const [],
-    new Key(D): const [],
-    new Key(E): const [],
+    A: [new Key(B), new Key(C)],
+    B: [new Key(D), new Key(E)],
+    C: const [],
+    D: const [],
+    E: const [],
+    COne: const [],
+    ETwo: const [],
+    F: [new Key(C, AnnOne), new Key(D)],
+    G: [new Key(G, AnnTwo)],
 };

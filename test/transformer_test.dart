@@ -5,9 +5,7 @@ import 'dart:async';
 import 'package:barback/barback.dart';
 import 'package:code_transformers/resolver.dart';
 import 'package:code_transformers/tests.dart' as tests;
-import 'package:di/transformer/injector_generator.dart';
-import 'package:di/transformer/import_transformer.dart';
-import 'package:di/transformer/options.dart';
+import 'package:di/transformer.dart';
 
 import 'package:guinness/guinness.dart';
 
@@ -718,7 +716,7 @@ main() {
         });
       });
 
-      iit('transforms di.dart import', () {
+      it('transforms di.dart import', () {
         return tests.applyTransformers(phases,
         inputs: {
             'a|web/main.dart': '''

@@ -75,12 +75,17 @@
 library di.transformer;
 
 import 'dart:io';
+import 'dart:async';
+import 'package:analyzer/src/generated/ast.dart';
+import 'package:analyzer/src/generated/element.dart';
 import 'package:barback/barback.dart';
 import 'package:code_transformers/resolver.dart';
-import 'package:di/transformer/injector_generator.dart';
-import 'package:di/transformer/import_transformer.dart';
-import 'package:di/transformer/options.dart';
 import 'package:path/path.dart' as path;
+import 'package:source_maps/refactor.dart';
+
+part 'transformer/import_transformer.dart';
+part 'transformer/injector_generator.dart';
+part 'transformer/options.dart';
 
 
 /**
@@ -152,6 +157,22 @@ List<List<Transformer>> _createPhases(TransformOptions options) {
   var resolvers = new Resolvers(options.sdkDirectory);
   return [[
       new InjectorGenerator(options, resolvers),
-      new ImportTransformer(options, resolvers)],
-  ];
+      new ImportTransformer(options, resolvers)]];
+}
+
+/// Commits the transaction if there have been edits, otherwise just adds
+/// the input as an output.
+void commitTransaction(TextEditTransaction transaction, Transform transform) {
+  var id = transform.primaryInput.id;
+
+  if (transaction.hasEdits) {
+    var printer = transaction.commit();
+    var url = id.path.startsWith('lib/')
+    ? 'package:${id.package}/${id.path.substring(4)}' : id.path;
+    printer.build(url);
+    transform.addOutput(new Asset.fromString(id, printer.text));
+  } else {
+    // No modifications, so just pass the source through.
+    transform.addOutput(transform.primaryInput);
+  }
 }

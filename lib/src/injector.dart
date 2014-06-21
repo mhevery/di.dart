@@ -32,11 +32,6 @@ abstract class Injector {
   dynamic getByKey(Key key, {int depth});
 
   /**
-   * Does the injector know how to create an instance for Key?
-   */
-  bool hasBindingForKey(Key key);
-
-  /**
    * Creates a child injector.
    *
    * [modules] overrides bindings of the parent.
@@ -55,9 +50,7 @@ abstract class Injector {
 class RootInjector implements Injector {
   Injector get parent => null;
   List<Object> get _instances => null;
-
   dynamic getByKey(key) => throw new NoProviderError(key);
-  bool hasBindingForKey(key) => true; // pretends to have it so children will ask and get error
   const RootInjector();
 }
 
@@ -136,9 +129,6 @@ class ModuleInjector extends Injector {
     // An alternative could be to recurse only when parent is not a ModuleInjector
     return _instances[id] = parent.getByKey(key);
   }
-
-  bool hasBindingForKey(Key key) =>
-      key.id < _bindings.length && _bindings[key.id] != null;
 
   @deprecated
   Injector createChild(List<Module> modules) {

@@ -1,15 +1,4 @@
-library di.transformer.injector_generator;
-
-import 'dart:async';
-import 'package:analyzer/src/generated/ast.dart';
-import 'package:analyzer/src/generated/element.dart';
-import 'package:barback/barback.dart';
-import 'package:code_transformers/resolver.dart';
-import 'package:di/transformer/options.dart';
-import 'package:path/path.dart' as path;
-
-import 'refactor.dart';
-import 'process_classes.dart';
+part of di.transformer;
 
 /**
  * Pub transformer which generates type factories for all injectable types
@@ -70,10 +59,12 @@ class _Processor {
 
     var constructors = _gatherConstructors();
 
+    // generates typeFactory file
     var injectLibContents = _generateInjectLibrary(constructors);
     transform.addOutput(
         new Asset.fromString(_generatedAssetId, injectLibContents));
 
+    // edits main function
     var lib = resolver.getLibrary(id);
     var unit = lib.definingCompilationUnit.node;
     var transaction = resolver.createTextEditTransaction(lib);

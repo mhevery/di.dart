@@ -4,7 +4,7 @@ import 'dart:async';
 main() {
   int numClasses = 1000;
 
-  File file = new File('generated_classes.dart');
+  File file = new File('benchmark/generated_classes.dart');
   var sink = file.openWrite(mode: WRITE);
   sink.write('import "package:di/key.dart";\n');
   sink.write('import "package:di/di.dart";\n');

@@ -1,12 +1,4 @@
-library di.transformer.type_reflector_transformer;
-
-import 'dart:async';
-import 'package:analyzer/src/generated/ast.dart';
-import 'package:barback/barback.dart';
-import 'package:code_transformers/resolver.dart';
-import 'package:di/transformer/options.dart';
-import 'package:di/transformer/refactor.dart';
-import 'package:path/path.dart' as path;
+part of di.transformer;
 
 /**
  * Changes di.dart to import static version of TypeReflector

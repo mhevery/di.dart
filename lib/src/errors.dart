@@ -12,35 +12,30 @@ class DynamicReflectorError extends BaseError {
 
 abstract class ResolvingError extends Error {
 
-  final Object node;
-  final ResolvingError parent;
+  List<Key> keys;
 
-  ResolvingError(this.node, [this.parent]);
+  ResolvingError(key): keys = [key];
 
   String get resolveChain {
+    var keysToPrint = [];
+    var seenKeys = new Set();
+    for (Key key in keys.reversed) {
+      keysToPrint.add(key);
+      if (!seenKeys.add(key)) break;
+    }
+
     StringBuffer buffer = new StringBuffer();
     buffer.write("(resolving ");
-    Set seenNodes = new Set();
-
-    ResolvingError error = this;
-    while (true) {
-      buffer.write(error.node);
-      error = error.parent;
-      if (error == null || !seenNodes.add(error.node)) break;
-      buffer.write(" -> ");
-    }
+    buffer.write(keysToPrint.join(' -> '));
     buffer.write(")");
     return buffer.toString();
   }
 
-  Object get rootNode {
-    if (parent == null) {
-      return node;
-    }
-    return parent.rootNode;
+  void appendKey(Key key) {
+   keys.add(key);
   }
 
-  String toString() => resolveChain;
+  String toString();
 }
 
 class NoProviderError extends ResolvingError {
@@ -51,18 +46,18 @@ class NoProviderError extends ResolvingError {
   final NoProviderError parent;
 
   String toString(){
-    var root = rootNode;
+    var root = keys.first;
     if (_PRIMITIVE_TYPES.contains(root)) {
       return 'Cannot inject a primitive type of $root! $resolveChain';
     }
     return "No provider found for $root! $resolveChain";
   }
-  NoProviderError(key, [this.parent]): super(key);
+  NoProviderError(key): super(key);
 }
 
 class CircularDependencyError extends ResolvingError {
   String toString() => "Cannot resolve a circular dependency! $resolveChain";
-  CircularDependencyError(key, [parent]) : super(key, parent);
+  CircularDependencyError(key) : super(key);
 }
 
 class NoParentError extends BaseError {

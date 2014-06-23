@@ -116,10 +116,9 @@ class ModuleInjector extends Injector {
             params[i] = getByKey(paramKeys[i], depth + 1);
           }
           return _instances[id] = binding.factory(params);
-        } on CircularDependencyError catch (e) {
-          throw new CircularDependencyError(key, e);
-        } on NoProviderError catch (e) {
-          throw new NoProviderError(key, e);
+        } on ResolvingError catch (e) {
+          e.appendKey(key);
+          rethrow; // to preserve stack trace
         }
       }
     }

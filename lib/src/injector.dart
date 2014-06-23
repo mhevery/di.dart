@@ -29,7 +29,7 @@ abstract class Injector {
   /**
    * Faster version of [get].
    */
-  dynamic getByKey(Key key, {int depth});
+  dynamic getByKey(Key key, [int depth]);
 
   /**
    * Creates a child injector.

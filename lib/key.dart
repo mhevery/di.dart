@@ -8,9 +8,9 @@ import 'dart:collection';
  */
 class Key {
   // TODO: experiment with having a separate map for non-annotated types (perf)
-  // TODO: Use Map.identity once its bug is fixed in dart2js
+  // TODO: Use Map.identity once dart issue 19622 is fixed
+  //        (run last test in KeySpec of main.dart in dart2js)
   static Map<Type, Map<Type, Key>> _typeToAnnotationToKey = {};
-  static List<Key> _keys = new List();
   static int _numInstances = 0;
   /// The number of instances of [Key] created.
   static int get numInstances => _numInstances;
@@ -49,9 +49,7 @@ class Key {
     if (key == null) {
       annotationToKey[annotation] =
           key = new Key._(type, annotation, _numInstances++);
-      _keys.add(key);
     }
-    assert(_keys.length == _numInstances);
     return key;
   }
 

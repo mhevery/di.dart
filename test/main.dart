@@ -22,6 +22,8 @@ import 'test_annotations.dart';
 // Generated file. Run ../test_tf_gen.sh.
 import 'type_factories_gen.dart' as type_factories_gen;
 
+import 'dart:mirrors';
+
 /**
  * Annotation used to mark classes for which static type factory must be
  * generated. For testing purposes not all classes are marked with this
@@ -654,6 +656,16 @@ createKeySpec() {
     it('should not be equal to another key if type is different and annotation'
         ' is same', () {
       expectEquals(new Key(Engine, Old), new Key(Car, Old), false);
+    });
+
+    it('should be equal to a mirrored key of the same type', () {
+      ClassMirror classMirror = reflectType(Car);
+      MethodMirror ctor = classMirror.declarations[classMirror.simpleName];
+
+      ParameterMirror p = ctor.parameters[0];
+      var pType = (p.type as ClassMirror).reflectedType;
+
+      expectEquals(new Key(Engine), new Key(pType), true);
     });
   });
 }

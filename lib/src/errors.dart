@@ -13,7 +13,6 @@ class DynamicReflectorError extends BaseError {
 abstract class ResolvingError extends Error {
 
   List<Key> keys;
-
   ResolvingError(key): keys = [key];
 
   String get resolveChain {

@@ -281,7 +281,11 @@ createInjectorSpec(String injectorName, InjectorFactory injectorFactory,
 
 
     it('should resolve basic dependencies', () {
-      var injector = injectorFactory([moduleFactory()..bind(Car)..bind(Engine)]);
+      var injector = injectorFactory([
+          moduleFactory()
+              ..bind(Car)
+              ..bind(Engine)
+      ]);
       var instance = injector.get(Car);
 
       expect(instance).toBeAnInstanceOf(Car);

@@ -8,7 +8,8 @@ import 'dart:collection';
  */
 class Key {
   // TODO: experiment with having a separate map for non-annotated types (perf)
-  static Map<Type, Map<Type, Key>> _typeToAnnotationToKey = new Map.identity();
+  // TODO: Use Map.identity once its bug is fixed in dart2js
+  static Map<Type, Map<Type, Key>> _typeToAnnotationToKey = {};
   static List<Key> _keys = new List();
   static int _numInstances = 0;
   /// The number of instances of [Key] created.
@@ -21,13 +22,15 @@ class Key {
   final int id;
 
   int _data;
+  @deprecated
   int get uid => _data;
-  set data(int d) {
+  @deprecated
+  set uid(int d) {
     if (_data == null) {
       _data = d;
       return;
     }
-    throw "Key($type).data has already been set to $_data.";
+    throw "Key($type).uid has already been set to $_data.";
   }
 
   int get hashCode => id;

@@ -68,20 +68,30 @@ class _Processor {
     var lib = resolver.getLibrary(id);
     var unit = lib.definingCompilationUnit.node;
     var transaction = resolver.createTextEditTransaction(lib);
-    var last = unit.directives.where((d) => d is ImportDirective).last;
-    transaction.edit(last.end, last.end, '\nimport '
+    var imports = unit.directives.where((d) => d is ImportDirective);
+    var dir = imports.where((ImportDirective d) =>
+        d.uriContent == 'dynamic_type_factories.dart');
+    var begin, end;
+    if (dir.isNotEmpty) {
+      begin = dir.first.offset;
+      end = dir.first.end;
+    } else {
+      begin = imports.last.end;
+      end = imports.last.end;
+    }
+    transaction.edit(begin, end, '\nimport '
         "'${path.url.basenameWithoutExtension(id.path)}"
-        "_generated_type_factory_maps.dart' show initializeGeneratedTypeFactories;");
+        "_generated_type_factory_maps.dart' show initializeDefaultTypeReflector;");
 
     FunctionExpression main = unit.declarations.where((d) => d.name.toString() == 'main')
         .first.functionExpression;
     var body = main.body;
     if (body is BlockFunctionBody) {
       var location = body.beginToken.end;
-      transaction.edit(location, location, '\n  initializeGeneratedTypeFactories();');
+      transaction.edit(location, location, '\n  initializeDefaultTypeReflector();');
     } else if (body is ExpressionFunctionBody) {
       transaction.edit(body.beginToken.offset, body.endToken.end,
-          "{\n  initializeGeneratedTypeFactories();\n"
+          "{\n  initializeDefaultTypeReflector();\n"
           "  return ${body.expression};\n}");
     } // EmptyFunctionBody can only appear as abstract methods and constructors.
 
@@ -364,7 +374,8 @@ class _Processor {
     outputBuffer.write('};\nfinal Map<Type, List<Key>> parameterKeys = {\n');
     outputBuffer.write(paramsBuffer);
     outputBuffer.write('};\n');
-    outputBuffer.write('initializeGeneratedTypeFactories() => '
+    outputBuffer.write('initializeDefaultTypeReflector() => '
+        'Module.DEFAULT_REFLECTOR = '
         'new GeneratedTypeFactories(typeFactories, parameterKeys);\n');
 
     return outputBuffer.toString();

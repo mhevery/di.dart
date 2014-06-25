@@ -83,7 +83,6 @@ import 'package:code_transformers/resolver.dart';
 import 'package:path/path.dart' as path;
 import 'package:source_maps/refactor.dart';
 
-part 'transformer/import_transformer.dart';
 part 'transformer/injector_generator.dart';
 part 'transformer/options.dart';
 
@@ -155,9 +154,7 @@ _readStringListValue(Map args, String name) {
 
 List<List<Transformer>> _createPhases(TransformOptions options) {
   var resolvers = new Resolvers(options.sdkDirectory);
-  return [[
-      new InjectorGenerator(options, resolvers),
-      new ImportTransformer(options, resolvers)]];
+  return [[new InjectorGenerator(options, resolvers)]];
 }
 
 /// Commits the transaction if there have been edits, otherwise just adds

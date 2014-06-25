@@ -19,8 +19,7 @@ main() {
     var resolvers = new Resolvers(dartSdkDirectory);
 
     var phases = [
-      [new InjectorGenerator(options, resolvers),
-      new ImportTransformer(options, resolvers)]
+      [new InjectorGenerator(options, resolvers)]
     ];
 
     it('transforms imports', () {
@@ -685,10 +684,10 @@ main() {
               'a|web/main.dart': '''
 library main;
 import 'package:di/di.dart';
-import 'main_generated_type_factory_maps.dart' show initializeGeneratedTypeFactories;
+import 'main_generated_type_factory_maps.dart' show initializeDefaultTypeReflector;
 
 main() {
-  initializeGeneratedTypeFactories();
+  initializeDefaultTypeReflector();
   print('abc');
 }'''
             });
@@ -707,44 +706,12 @@ main() => print("abc");'''
             'a|web/main.dart': '''
 library main;
 import 'package:di/di.dart';
-import 'main_generated_type_factory_maps.dart' show initializeGeneratedTypeFactories;
+import 'main_generated_type_factory_maps.dart' show initializeDefaultTypeReflector;
 
 main() {
-  initializeGeneratedTypeFactories();
+  initializeDefaultTypeReflector();
   return print("abc");
 }'''
-        });
-      });
-
-      it('transforms di.dart import', () {
-        return tests.applyTransformers(phases,
-        inputs: {
-            'a|web/main.dart': '''
-library main;
-import 'package:di/di.dart';
-
-main(){print('abc');}''',
-            'di|lib/di.dart': '''
-library di;
-
-import 'dynamic_type_factories.dart';
-''',
-            'di|lib/dynamic_type_factories.dart': '',
-            'di|lib/generated_type_factories.dart': ''
-        },
-        results: {
-            'a|web/main.dart': '''
-library main;
-import 'package:di/di.dart';
-import 'main_generated_type_factory_maps.dart' show initializeGeneratedTypeFactories;
-
-main(){
-  initializeGeneratedTypeFactories();print('abc');}''',
-            'di|lib/di.dart': '''
-library di;
-
-import 'generated_type_factories.dart';
-'''
         });
       });
   });
@@ -774,7 +741,7 @@ final Map<Type, Factory> typeFactories = <Type, Factory>{
 ${factories.join('')}};
 final Map<Type, List<Key>> parameterKeys = {
 ${paramKeys.join('')}};
-initializeGeneratedTypeFactories() => new GeneratedTypeFactories(typeFactories, parameterKeys);
+initializeGeneratedTypeFactories() => Module.DEFAULT_REFLECTOR = new GeneratedTypeFactories(typeFactories, parameterKeys);
 ''',
       },
       messages: messages);

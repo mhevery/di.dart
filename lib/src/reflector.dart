@@ -23,3 +23,23 @@ abstract class TypeReflector {
    */
   List<Key> parameterKeysFor(Type type);
 }
+
+class NullReflector extends TypeReflector {
+  factoryFor() => throw new NullReflectorError();
+  parameterKeysFor() => throw new NullReflectorError();
+}
+
+class NullReflectorError extends BaseError {
+  NullReflectorError()
+    : super("No default dependency injection reflector set for Module. \n"
+    "To use recommended behavior, which uses mirrors to resolve dependencies "
+    "when transformers are off and generated type factories when transformers"
+    "are enabled, add the following line to the main function before any modules"
+    "are instantiated:\n"
+    "initializeDefaultTypeReflector();\n"
+    "with the import:\n"
+    "import 'package:di/dynamic_type_factories.dart';\n"
+    "To always use static code generation instead, call the "
+    "initializeGeneratedTypeFactories function provided by the transformer generated"
+    "file instead.");
+}

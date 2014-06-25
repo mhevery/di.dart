@@ -19,7 +19,7 @@ class Binding {
  * no effect on that injector.
  */
 class Module {
-  static final TypeReflector DEFAULT_REFLECTOR = getTypeReflector();
+  static TypeReflector DEFAULT_REFLECTOR = new NullReflector();
   final TypeReflector reflector;
 
   Module(): reflector = DEFAULT_REFLECTOR;

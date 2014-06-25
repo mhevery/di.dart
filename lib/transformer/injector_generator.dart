@@ -83,7 +83,8 @@ class _Processor {
         "'${path.url.basenameWithoutExtension(id.path)}"
         "_generated_type_factory_maps.dart' show initializeDefaultTypeReflector;");
 
-    FunctionExpression main = unit.declarations.where((d) => d.name.toString() == 'main')
+    FunctionExpression main = unit.declarations.where((d) =>
+        d is FunctionDeclaration && d.name.toString() == 'main')
         .first.functionExpression;
     var body = main.body;
     if (body is BlockFunctionBody) {

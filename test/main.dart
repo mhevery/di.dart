@@ -177,7 +177,7 @@ class AnnotatedPrimitiveDependency {
 }
 
 class EmulatedMockEngineFactory {
-  call(p) => new MockEngine();
+  call() => new MockEngine();
 }
 
 bool throwOnceShouldThrow = true;
@@ -225,19 +225,19 @@ moduleTest() {
 
       it('should throw if incorrect combination of parameters passed (2)', () {
         expect(() {
-          new Module().bind(Engine, toValue: new Engine(), toFactory: (_) => null);
+          new Module().bind(Engine, toValue: new Engine(), toFactory: () => null);
         }).toThrowWith(message: BIND_ERROR);
       });
 
       it('should throw if incorrect combination of parameters passed (3)', () {
         expect(() {
-          new Module().bind(Engine, toValue: new Engine(), toImplementation: MockEngine, toFactory: (_) => null);
+          new Module().bind(Engine, toValue: new Engine(), toImplementation: MockEngine, toFactory: () => null);
         }).toThrowWith(message: BIND_ERROR);
       });
 
       it('should throw if incorrect combination of parameters passed (4)', () {
         expect(() {
-          new Module().bind(Engine, toImplementation: MockEngine, toFactory: (_) => null);
+          new Module().bind(Engine, toImplementation: MockEngine, toFactory: () => null);
         }).toThrowWith(message: BIND_ERROR);
       });
 
@@ -386,7 +386,7 @@ createInjectorSpec(String injectorName, InjectorFactory injectorFactory,
 
 
     it('should allow providing factory functions', () {
-      var module = moduleFactory()..bind(Engine, toFactory: (p) {
+      var module = moduleFactory()..bind(Engine, toFactory: () {
         return 'factory-product';
       });
 
@@ -411,8 +411,8 @@ createInjectorSpec(String injectorName, InjectorFactory injectorFactory,
     it('should inject injector into factory function', () {
       var module = moduleFactory()
         ..bind(Engine)
-        ..bind(Car, toFactory: (p) {
-          return new Car(p[0], p[1]);
+        ..bind(Car, toFactory: (Engine engine, Injector injector) {
+          return new Car(engine, injector);
         }, inject: [Engine, Injector]);
 
       var injector = injectorFactory([module]);

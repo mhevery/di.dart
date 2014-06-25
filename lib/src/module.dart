@@ -1,14 +1,18 @@
 part of di;
 
-_DEFAULT_VALUE(_) => null;
 typedef dynamic Factory(List<dynamic> parameters);
+_DEFAULT_VALUE(_) => null;
+_IDENTITY(p) => p[0];
 
 class Binding {
   Key key;
   List<Key> parameterKeys;
-  Factory factory;
+  Function factory;
   Binding(this.key, this.parameterKeys, this.factory);
 }
+
+bool _isSet(val) => !identical(val, _DEFAULT_VALUE);
+bool _isNotSet(val) => identical(val, _DEFAULT_VALUE);
 
 /**
  * Module contributes configuration information to an [Injector] by providing
@@ -47,10 +51,12 @@ class Module {
    * same time: [toImplementation], [toFactory], [toValue].
    */
   void bind(Type type, {dynamic toValue: _DEFAULT_VALUE,
-      Factory toFactory: _DEFAULT_VALUE, Type toImplementation,
+      Function toFactory: _DEFAULT_VALUE, Factory toFactoryPos: _DEFAULT_VALUE,
+      Type toImplementation,
       List inject: const [], Type withAnnotation}) {
     bindByKey(new Key(type, withAnnotation), toValue: toValue,
-        toFactory: toFactory, toImplementation: toImplementation, inject: inject);
+        toFactory: toFactory, toFactoryPos: toFactoryPos,
+        toImplementation: toImplementation, inject: inject);
   }
 
   /**
@@ -58,21 +64,22 @@ class Module {
    * [Type] [withAnnotation] combination. Faster.
    */
   void bindByKey(Key key, {dynamic toValue: _DEFAULT_VALUE,
-      Factory toFactory: _DEFAULT_VALUE, List inject: const [], Type toImplementation}) {
-    if (inject.length == 1 && toFactory == _DEFAULT_VALUE) {
-      toFactory = (p) => p[0];
+      Function toFactory: _DEFAULT_VALUE, Factory toFactoryPos: _DEFAULT_VALUE,
+      List inject: const [], Type toImplementation}) {
+    if (inject.length == 1 && _isNotSet(toFactory) && _isNotSet(toFactoryPos)) {
+      toFactoryPos = _IDENTITY;
     }
 
-    _checkBindArgs(toValue, toFactory, toImplementation);
+    _checkBindArgs(toValue, toFactory, toFactoryPos, toImplementation);
 
     List<Key> parameterKeys;
     Factory factory;
 
-    if (!identical(toValue, _DEFAULT_VALUE)) {
+    if (_isSet(toValue)) {
       factory = (_) => toValue;
       parameterKeys = const [];
-    } else if (!identical(toFactory, _DEFAULT_VALUE)) {
-      factory = toFactory;
+    } else if (_isSet(toFactory) || _isSet(toFactoryPos)) {
+      factory = _isSet(toFactoryPos) ? toFactoryPos : (args) => Function.apply(toFactory, args);
       parameterKeys = inject.map((t) {
         if (t is Key) return t;
         if (t is Type) return new Key(t);
@@ -86,14 +93,15 @@ class Module {
     bindings[key] = new Binding(key, parameterKeys, factory);
   }
 
-  _checkBindArgs(toValue, toFactory, toImplementation) {
+  _checkBindArgs(toValue, toFactory, toFactoryPos, toImplementation) {
     int count = 0;
-    if (!identical(toValue, _DEFAULT_VALUE)) count++;
-    if (!identical(toFactory, _DEFAULT_VALUE)) count++;
+    if (_isSet(toValue)) count++;
+    if (_isSet(toFactory)) count++;
+    if (_isSet(toFactoryPos)) count++;
     if (toImplementation != null) count++;
     if (count > 1) {
       throw 'Only one of following parameters can be specified: '
-            'toValue, toFactory, toImplementation';
+            'toValue, toFactory, toFactoryPos, toImplementation';
     }
     return true;
   }
@@ -129,7 +137,7 @@ class Module {
   }
 
   @Deprecated("Use bindByKey(type, toFactory: factory)")
-  void factoryByKey(Key key, Factory factoryFn) {
+  void factoryByKey(Key key, Function factoryFn) {
     bindByKey(key, toFactory: factoryFn);
   }
 }

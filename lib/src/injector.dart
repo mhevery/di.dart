@@ -112,7 +112,7 @@ class ModuleInjector extends Injector {
           var paramKeys = binding.parameterKeys;
           var length = paramKeys.length;
           var params = new List(length);
-          for(var i = 0; i < length; i++) {
+          for (var i = 0; i < length; i++) {
             params[i] = getByKey(paramKeys[i], depth + 1);
           }
           return _instances[id] = binding.factory(params);

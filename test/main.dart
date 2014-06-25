@@ -15,8 +15,8 @@ import 'package:guinness/guinness.dart';
 import 'package:matcher/matcher.dart' as matcher;
 import 'package:di/di.dart';
 import 'package:di/annotations.dart';
-import 'package:di/generated_type_factories.dart';
-import 'package:di/dynamic_type_factories.dart';
+import 'package:di/di_static.dart';
+import 'package:di/di_dynamic.dart';
 
 import 'test_annotations.dart';
 // Generated file. Run ../test_tf_gen.sh.

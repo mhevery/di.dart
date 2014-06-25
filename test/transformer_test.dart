@@ -684,10 +684,10 @@ main() {
               'a|web/main.dart': '''
 library main;
 import 'package:di/di.dart';
-import 'main_generated_type_factory_maps.dart' show initializeDefaultTypeReflector;
+import 'main_generated_type_factory_maps.dart' show setupModuleTypeReflector;
 
 main() {
-  initializeDefaultTypeReflector();
+  setupModuleTypeReflector();
   print('abc');
 }'''
             });
@@ -706,10 +706,10 @@ main() => print("abc");'''
             'a|web/main.dart': '''
 library main;
 import 'package:di/di.dart';
-import 'main_generated_type_factory_maps.dart' show initializeDefaultTypeReflector;
+import 'main_generated_type_factory_maps.dart' show setupModuleTypeReflector;
 
 main() {
-  initializeDefaultTypeReflector();
+  setupModuleTypeReflector();
   return print("abc");
 }'''
         });
@@ -751,7 +751,7 @@ const String IMPORTS = '''
 library a.web.main.generated_type_factory_maps;
 
 import 'package:di/di.dart';
-import 'package:di/generated_type_factories.dart';
+import 'package:di/di_static.dart';
 ''';
 
 const String CLASS_ENGINE = '''

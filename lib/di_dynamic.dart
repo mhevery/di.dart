@@ -3,7 +3,7 @@ library di.dynamic_type_factories;
 import 'di.dart';
 import 'src/mirrors.dart';
 
-TypeReflector initializeDefaultTypeReflector() => Module.DEFAULT_REFLECTOR = new DynamicTypeFactories();
+TypeReflector setupModuleTypeReflector() => Module.DEFAULT_REFLECTOR = new DynamicTypeFactories();
 
 class DynamicTypeFactories extends TypeReflector {
   /// caches of results calculated from mirroring

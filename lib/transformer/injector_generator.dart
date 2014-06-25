@@ -69,8 +69,7 @@ class _Processor {
     var unit = lib.definingCompilationUnit.node;
     var transaction = resolver.createTextEditTransaction(lib);
     var imports = unit.directives.where((d) => d is ImportDirective);
-    var dir = imports.where((ImportDirective d) =>
-        d.uriContent == 'dynamic_type_factories.dart');
+    var dir = imports.where((ImportDirective d) => d.uriContent == 'package:di/di_dynamic.dart');
     var begin, end;
     if (dir.isNotEmpty) {
       begin = dir.first.offset;
@@ -81,7 +80,7 @@ class _Processor {
     }
     transaction.edit(begin, end, '\nimport '
         "'${path.url.basenameWithoutExtension(id.path)}"
-        "_generated_type_factory_maps.dart' show initializeDefaultTypeReflector;");
+        "_generated_type_factory_maps.dart' show setupModuleTypeReflector;");
 
     FunctionExpression main = unit.declarations.where((d) =>
         d is FunctionDeclaration && d.name.toString() == 'main')
@@ -89,10 +88,10 @@ class _Processor {
     var body = main.body;
     if (body is BlockFunctionBody) {
       var location = body.beginToken.end;
-      transaction.edit(location, location, '\n  initializeDefaultTypeReflector();');
+      transaction.edit(location, location, '\n  setupModuleTypeReflector();');
     } else if (body is ExpressionFunctionBody) {
       transaction.edit(body.beginToken.offset, body.endToken.end,
-          "{\n  initializeDefaultTypeReflector();\n"
+          "{\n  setupModuleTypeReflector();\n"
           "  return ${body.expression};\n}");
     } // EmptyFunctionBody can only appear as abstract methods and constructors.
 
@@ -375,7 +374,7 @@ class _Processor {
     outputBuffer.write('};\nfinal Map<Type, List<Key>> parameterKeys = {\n');
     outputBuffer.write(paramsBuffer);
     outputBuffer.write('};\n');
-    outputBuffer.write('initializeDefaultTypeReflector() => '
+    outputBuffer.write('setupModuleTypeReflector() => '
         'Module.DEFAULT_REFLECTOR = '
         'new GeneratedTypeFactories(typeFactories, parameterKeys);\n');
 
@@ -395,7 +394,7 @@ void _writeHeader(AssetId id, StringSink sink) {
 library ${id.package}.$libName.generated_type_factory_maps;
 
 import 'package:di/di.dart';
-import 'package:di/generated_type_factories.dart';
+import 'package:di/di_static.dart';
 
 ''');
 }

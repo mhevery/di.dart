@@ -25,8 +25,8 @@ abstract class TypeReflector {
 }
 
 class NullReflector extends TypeReflector {
-  factoryFor() => throw new NullReflectorError();
-  parameterKeysFor() => throw new NullReflectorError();
+  factoryFor(Type type) => throw new NullReflectorError();
+  parameterKeysFor(Type type) => throw new NullReflectorError();
 }
 
 class NullReflectorError extends BaseError {
@@ -36,9 +36,9 @@ class NullReflectorError extends BaseError {
     "when transformers are off and generated type factories when transformers"
     "are enabled, add the following line to the main function before any modules"
     "are instantiated:\n"
-    "initializeDefaultTypeReflector();\n"
+    "setupModuleTypeReflector();\n"
     "with the import:\n"
-    "import 'package:di/dynamic_type_factories.dart';\n"
+    "import 'package:di/di_dynamic.dart';\n"
     "To always use static code generation instead, call the "
     "initializeGeneratedTypeFactories function provided by the transformer generated"
     "file instead.");
